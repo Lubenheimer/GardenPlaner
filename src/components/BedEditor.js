@@ -83,8 +83,10 @@ export function renderBedEditor(bed) {
             <input type="number" class="form-input" id="bed-dim-y" value="${((bed.height || 0) / 100).toFixed(2)}" step="0.1" min="0.01">
           </div>
           <div class="form-group" style="margin: 0; flex: 1;">
-            <label class="form-label" style="font-size: 11px">Aufbauhöhe (cm)</label>
-            <input type="number" class="form-input" id="bed-custom-height" value="${bed.customHeight !== null ? bed.customHeight : ''}" placeholder="${currentType.defaultHeight || 0}">
+            <label class="form-label" style="font-size: 11px">Aufbauhöhe (m)</label>
+            <input type="number" class="form-input" id="bed-custom-height" step="0.01" min="0"
+              value="${bed.customHeight !== null ? (bed.customHeight / 100).toFixed(2) : ''}"
+              placeholder="${((currentType.defaultHeight || 0) / 100).toFixed(2)}">
           </div>
         </div>
         <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
@@ -185,7 +187,7 @@ export function bindBedEditorEvents(bedId, handlers) {
     const w  = Math.max(1, Math.round((parseFloat(dimX.value)  || 0.01) * 100));
     const h  = Math.max(1, Math.round((parseFloat(dimY.value)  || 0.01) * 100));
     const r  = parseFloat(rotation.value) || 0;
-    const ch = customHeight.value ? parseInt(customHeight.value) : null;
+    const ch = customHeight.value !== '' ? Math.round(parseFloat(customHeight.value) * 100) : null;
 
     store.updateBed(bedId, { width: w, height: h, rotation: r, customHeight: ch });
     handlers.onUpdate?.();

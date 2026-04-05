@@ -74,8 +74,8 @@ export function renderSettingsManager() {
               <div class="list-item" style="display:flex; justify-content:space-between; align-items:center; padding: 8px; border: var(--glass-border); margin-bottom: 8px; border-radius: 4px; background: rgba(0,0,0,0.05);">
                 <div style="display:flex; align-items:center; gap: 8px;">
                   <span style="width: 16px; height: 16px; border-radius: 3px; background: ${t.color}"></span>
-                  <strong>${t.name}</strong> 
-                  <span style="font-size:10px; color:var(--color-text-muted)">(${t.category || 'Fläche'}, ${t.defaultHeight || 0}cm)</span>
+                  <strong>${t.name}</strong>
+                  <span style="font-size:10px; color:var(--color-text-muted)">(${t.category || 'Fläche'}, ${((t.defaultHeight || 0) / 100).toFixed(2)}m)</span>
                   ${t.hasPlantings ? '<span title="Bepflanzbar" style="font-size: 12px;">🌱</span>' : ''}
                 </div>
                 <button class="icon-btn small delete-type-btn" data-id="${t.id}" ${types.length <= 1 ? 'disabled style="opacity: 0.3"' : ''}>
@@ -96,7 +96,7 @@ export function renderSettingsManager() {
                 <option value="area">Fläche / Boden</option>
                 <option value="line">Zaun / Linie</option>
               </select>
-              <input type="number" id="new-type-height" class="form-input" placeholder="Höhe in cm" style="width: 80px;" value="0">
+              <input type="number" id="new-type-height" class="form-input" placeholder="Höhe in m" step="0.01" min="0" style="width: 80px;" value="0">
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <label style="font-size: 12px; display:flex; align-items:center; gap: 4px; cursor: pointer;">
@@ -263,7 +263,7 @@ export function bindSettingsEvents(containerBlock, onUpdateCallback) {
     const name = containerBlock.querySelector('#new-type-name').value.trim();
     const color = containerBlock.querySelector('#new-type-color').value;
     const category = containerBlock.querySelector('#new-type-category').value;
-    const defaultHeight = parseInt(containerBlock.querySelector('#new-type-height').value) || 0;
+    const defaultHeight = Math.round((parseFloat(containerBlock.querySelector('#new-type-height').value) || 0) * 100);
     const hasPlantings = containerBlock.querySelector('#new-type-plantings').checked;
     if (!name) return;
     const types = store.getElementTypes();

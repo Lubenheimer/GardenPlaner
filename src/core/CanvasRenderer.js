@@ -286,21 +286,35 @@ export class CanvasRenderer {
       const m    = s.simulationMonth  !== undefined ? s.simulationMonth  : 6;
       const north = s.northRotation   !== undefined ? s.northRotation    : 0;
 
-      const hourAngle       = (t - 12) * 15;
-      const lengthMultiplier = 1 + Math.abs(t - 12) * 1.5;
-      const seasonMultiplier = 1 + Math.abs(m - 6) * 0.5;
-      const sunAngleDeg     = hourAngle - north;
-      const shadowX         = Math.sin(sunAngleDeg * Math.PI / 180);
-      const shadowY         = -Math.cos(sunAngleDeg * Math.PI / 180);
-      const totalLength     = lengthMultiplier * seasonMultiplier;
-      const baseObjH        = height > 0 ? height : ((level?.zIndex || 0) * 10);
-      const offsetLength    = baseObjH * totalLength * 0.15;
-      const bedRotRad       = (bed.rotation || 0) * Math.PI / 180;
-      const localShadowX    = shadowX * Math.cos(-bedRotRad) - shadowY * Math.sin(-bedRotRad);
-      const localShadowY    = shadowX * Math.sin(-bedRotRad) + shadowY * Math.cos(-bedRotRad);
+      // ── Echte Sonnen-Elevation (~50°N Mitteleuropa) ───────────────
+      const hourAngleDeg   = (t - 12) * 15;                                // 15°/h vom Mittag
+      const declinationDeg = 23.45 * Math.sin((m - 3) / 12 * 2 * Math.PI); // Jahreszeit-Deklination
+      const latRad  = 50 * Math.PI / 180;
+      const declRad = declinationDeg * Math.PI / 180;
+      const haRad   = hourAngleDeg   * Math.PI / 180;
 
-      ctx.shadowColor   = 'rgba(0,0,0,0.45)';
-      ctx.shadowBlur    = baseObjH * 0.2 + ((level?.zIndex || 0) * 5);
+      // sin(Elevation) = sin(Lat)·sin(Dekl) + cos(Lat)·cos(Dekl)·cos(Stundenwinkel)
+      const sinElev = Math.sin(latRad) * Math.sin(declRad)
+                    + Math.cos(latRad) * Math.cos(declRad) * Math.cos(haRad);
+
+      // Schattenlänge = Höhe / tan(Elevation) = Höhe × cos/sin
+      // Clamp auf ~3.5° Mindesthöhe, damit Schatten nicht unendlich werden
+      const elevClamped  = Math.max(sinElev, 0.06);
+      const shadowFactor = Math.sqrt(1 - elevClamped * elevClamped) / elevClamped;
+
+      // Schatten-Richtung (Azimut) bleibt wie bisher
+      const sunAzimuthDeg = hourAngleDeg - north;
+      const shadowX       = Math.sin(sunAzimuthDeg * Math.PI / 180);
+      const shadowY       = -Math.cos(sunAzimuthDeg * Math.PI / 180);
+
+      const baseObjH     = height > 0 ? height : ((level?.zIndex || 0) * 10);
+      const offsetLength = baseObjH * shadowFactor;
+      const bedRotRad    = (bed.rotation || 0) * Math.PI / 180;
+      const localShadowX = shadowX * Math.cos(-bedRotRad) - shadowY * Math.sin(-bedRotRad);
+      const localShadowY = shadowX * Math.sin(-bedRotRad) + shadowY * Math.cos(-bedRotRad);
+
+      ctx.shadowColor   = 'rgba(0,0,0,0.40)';
+      ctx.shadowBlur    = Math.min(baseObjH * 0.03 + (level?.zIndex || 0) * 3, 30);
       ctx.shadowOffsetX = localShadowX * offsetLength;
       ctx.shadowOffsetY = localShadowY * offsetLength;
     }
