@@ -297,18 +297,23 @@ export class CanvasRenderer {
       const sinElev = Math.sin(latRad) * Math.sin(declRad)
                     + Math.cos(latRad) * Math.cos(declRad) * Math.cos(haRad);
 
-      // Schattenlänge = Höhe / tan(Elevation) = Höhe × cos/sin
-      // Clamp auf ~3.5° Mindesthöhe, damit Schatten nicht unendlich werden
+      // shadowFactor = cot(Elevation) = cos/sin — gibt physikalische Schattenlänge relativ zur Höhe
+      // Clamp: min ~3.5° (kein unendlicher Horizont-Schatten), max 5× Höhe (Abendsonne)
       const elevClamped  = Math.max(sinElev, 0.06);
-      const shadowFactor = Math.sqrt(1 - elevClamped * elevClamped) / elevClamped;
+      const shadowFactor = Math.min(Math.sqrt(1 - elevClamped * elevClamped) / elevClamped, 5);
 
       // Schatten-Richtung (Azimut) bleibt wie bisher
       const sunAzimuthDeg = hourAngleDeg - north;
       const shadowX       = Math.sin(sunAzimuthDeg * Math.PI / 180);
       const shadowY       = -Math.cos(sunAzimuthDeg * Math.PI / 180);
 
-      const baseObjH     = height > 0 ? height : ((level?.zIndex || 0) * 10);
-      const offsetLength = baseObjH * shadowFactor;
+      const baseObjH = height > 0 ? height : ((level?.zIndex || 0) * 10);
+
+      // Visueller Skalierungsfaktor: ctx.shadowOffset eignet sich für kleine Offsets (10-60px).
+      // Physikalisch korrekte Werte (125px für ein 2,5m Haus) sehen bei Canvas-Schatten
+      // wie ein losgelöstes Duplikat aus. Daher auf ~25% skalieren — Verhältnisse bleiben korrekt.
+      const VISUAL_SCALE = 0.25;
+      const offsetLength = baseObjH * shadowFactor * VISUAL_SCALE;
       const bedRotRad    = (bed.rotation || 0) * Math.PI / 180;
       const localShadowX = shadowX * Math.cos(-bedRotRad) - shadowY * Math.sin(-bedRotRad);
       const localShadowY = shadowX * Math.sin(-bedRotRad) + shadowY * Math.cos(-bedRotRad);
