@@ -309,11 +309,11 @@ export class CanvasRenderer {
 
       const baseObjH = height > 0 ? height : ((level?.zIndex || 0) * 10);
 
-      // Visueller Skalierungsfaktor: ctx.shadowOffset eignet sich für kleine Offsets (10-60px).
-      // Physikalisch korrekte Werte (125px für ein 2,5m Haus) sehen bei Canvas-Schatten
-      // wie ein losgelöstes Duplikat aus. Daher auf ~25% skalieren — Verhältnisse bleiben korrekt.
-      const VISUAL_SCALE = 0.25;
-      const offsetLength = baseObjH * shadowFactor * VISUAL_SCALE;
+      // ctx.shadowOffset ist eine Schlagschatten-API, keine Geometrie.
+      // Ab ~50px sieht es wie ein losgelöstes Duplikat aus, egal wie groß das Objekt.
+      // Daher: proportionale Skalierung für kleine Objekte, hartes Cap für große.
+      const MAX_SHADOW_PX = 48;
+      const offsetLength  = Math.min(baseObjH * shadowFactor * 0.25, MAX_SHADOW_PX);
       const bedRotRad    = (bed.rotation || 0) * Math.PI / 180;
       const localShadowX = shadowX * Math.cos(-bedRotRad) - shadowY * Math.sin(-bedRotRad);
       const localShadowY = shadowX * Math.sin(-bedRotRad) + shadowY * Math.cos(-bedRotRad);
