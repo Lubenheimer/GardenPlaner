@@ -1,71 +1,146 @@
-# Implementierungsplan: GardenPlaner V2 (SaaS & Multi-Garten)
+# Implementierungsplan: GardenPlaner V2
 
-Die aktuelle Version des GardenPlaners funktioniert als großartiges, lokales Planungstool. Um das Projekt als Software-as-a-Service (SaaS) auf den Markt zu bringen, bedarf es optischer Tiefe, Multi-Mandanten-Fähigkeit (bzw. Speicher für mehrere Projekte) und einer serverbasierten Architektur.
-
----
-
-## 🎨 1. Neues Design & Farbgebung (Raus aus dem "Zu viel Grün")
-
-Die App ist aktuell sehr "flach" und grün-lastig. Um Premium-Nutzer anzusprechen, müssen wir das UI aufwerten.
-
-### Geplante Design-Upgrades
-- **Texturen statt Farben:** Statt flacher Hex-Farben für Beete implementieren wir **Assets/Texturen** (Erde, Rindenmulch, Gras, Holzdielen, Holzrahmen für Hochbeete). Die 3D-Ansicht wird dadurch massiv aufgewertet.
-- **Modernes Color-Theming:** 
-  - Die App-Oberfläche wird auf Erdtöne (Terracotta, Sand, tiefes Blaugrau) oder eine neutrale, dunkle Ästhetik (Glassmorphismus) umgestellt, damit der grüne Content (der Garten) im Fokus steht und nicht mit dem UI "konkurriert".
-- **Schatten & Licht:** Einführung von weicheren ambienten Schattenwürfen auch auf der UI-Ebene für eine "tiefere" Benutzererfahrung.
-- **Sanfte Animationen:** Interaktives Feedback beim Ziehen von Pflanzen ins Beet, "Wachsen"-Animationen beim Ändern des Pflanzenstatus.
+Letzte Aktualisierung: April 2026
 
 ---
 
-## 🏡 2. Die neue "Garten"-Entität (Multi-Projekt-Support)
+## ✅ 1. Neues Design & Farbgebung — ERLEDIGT
 
-Bisher gibt es exakt einen Garten pro Anwender in der `localStorage`.
-
-### Architektur (`src/core/Store.js`)
-- **Store-Struktur:** Das Speicherschema wird grundlegend umgestellt.
-  ```json
-  {
-    "userSettings": { "theme": "dark" },
-    "activeGardenId": "g1",
-    "gardens": [
-      {
-        "id": "g1",
-        "name": "Mein Gemüsegarten",
-        "dimensions": { "w": 2000, "h": 1500 },
-        "beds": [...],
-        "plantings": [...],
-        "tasks": [...]
-      }
-    ]
-  }
-  ```
-- **Projekt-Manager UI:** Eine neue Ansicht im Startmenü ("Meine Gärten"), wo man zwischen verschiedenen Gärten wechseln, neue anlegen oder sie löschen kann.
+- ✅ **Texturen auf Canvas:** Erde, Rindenmulch, Gras, Holzdielen, Kies — per `ctx.createPattern()` als Overlay
+- ✅ **Erdtöne-Theming:** Terracotta (`#7c5c3e`), Sand, Schieferblau statt Grün-Lastig; Light + Dark Mode
+- ✅ **Glassmorphismus:** Sidebar, Right Panel, Toolbar im Dark Mode mit `backdrop-filter: blur()`
+- ✅ **Schatten & Licht auf UI-Ebene:** Weiche Box-Shadows auf allen Panels und Karten
+- ✅ **Sanfte Animationen:** `plantGrow`-Keyframe auf Pflanzungs-Items, Badge-Shimmer bei Statuswechsel
+- ✅ **Schattenwurf-Simulation:** Physikalische Sonnenstand-Berechnung (Elevation, Azimut, Jahreszeit, Nordausrichtung)
 
 ---
 
-## ☁️ 3. SaaS-Fähigkeit (Monetarisierung & Cloud)
+## ✅ 2. Multi-Projekt-Support (Garten-Entität) — ERLEDIGT
 
-Um das Tool zu verkaufen, müssen wir weg vom reinen `localStorage` hin zu einem echten Backend.
-
-### Infrastruktur-Umbau
-1. **Authentifizierung (z. B. via Supabase oder Firebase):**
-   - User-Login (E-Mail, Google) hinzufügen.
-   - Lokaler Sandbox-Modus (ohne Login nutzbar, fordert irgendwann zum Speichern auf).
-2. **Datenbank-Synchronisierung:**
-   - Die `Store.js` `save()` und `load()` Funktionen kommunizieren per REST API/WebSocket mit einer Cloud-Datenbank.
-3. **Bezahl-Schranke (z. B. Stripe Integration):**
-   - **Free-Tier:** 1 Garten-Projekt, Basis-Pflanzenkatalog, keine 3D-Ansicht.
-   - **Pro-Tier (Abo):** Unendliche Projekte, volle 3D-Schatten-Simulation, detaillierte Wetter-Daten, KI-Assistent.
+- ✅ **Neue Store-Struktur:** `{ activeGardenId, gardens[], elementTypes (global), settings (global) }`
+- ✅ **Migration:** Altes Single-Garden-Format wird automatisch ins neue Format konvertiert
+- ✅ **Garten-Manager UI:** Modal zum Wechseln, Anlegen, Umbenennen, Löschen von Garten-Projekten
+- ✅ **Garden-Switcher** in der Sidebar mit aktivem Gartennamen
 
 ---
 
-## 🚀 4. Neue, sinnvolle Feature-Ideen
+## ✅ 3. Lokale Datenpersistenz (provisorisch) — ERLEDIGT
 
-Um sich von klassischer Stift-und-Papier-Planung abzuheben, braucht die App "Killer-Features", die nur digital möglich sind:
+Statt reinem `localStorage` ein lokaler Express-Server als persistente Datenbank.
 
-1. **Jahres-Gantt-Diagramm (Plant-Timeline):** 
-   Eine visuelle Jahresübersicht, in der man Balken sieht, wann welche Pflanze gesät, ausgepflanzt und geerntet wird – so visualisiert man Lücken in Beeten, wo noch eine "Nachkultur" gepflanzt werden kann.
-2. **Wetter- und Frost-API Integration:**
-   Anhand von Geo-Koordinaten des Gartens wird echtes Wetter geladen ("Achtung: Nächste Woche noch Bodenfrost, Tomaten noch nicht rausstellen!").
-3. **Automatischer KI-Assistent (Auto-Layout):**
-   Man legt ein leeres Beet an, klickt auf "Generieren" und die App setzt perfekt gematchte Mischkulturen auf Basis der Beet-Größe und des Lichts automatisch ein.
+- ✅ **Express-Backend** (`server/index.js`): `GET/POST /api/data` → schreibt `server/garden-data.json`
+- ✅ **Dual-Write-Pattern:** localStorage (sofort) + debounced Server-Push (600ms)
+- ✅ **Server als autoritativ beim Start:** `initFromServer()` lädt Server-Daten und überschreibt localStorage-Cache
+- ✅ **Server-Status-Indikator:** Farbiger Dot in der Toolbar (grün = online, grau = nur localStorage)
+- ✅ **Produktionsmodus:** Server liefert auch statische Dateien aus `dist/` aus
+- ✅ **Start-Skript:** `Start GartenPlaner.bat` für Windows-Doppelklick-Start
+- ✅ **GitHub Pages Deployment:** GitHub Actions Workflow für statisches Frontend-Hosting
+
+> **Offen (Cloud-SaaS):** Authentifizierung (Supabase/Firebase), Cloud-Datenbank-Sync, Stripe-Paywall — erst relevant wenn das Tool vermarktet werden soll.
+
+---
+
+## ✅ 4a. Jahres-Gantt-Diagramm — ERLEDIGT
+
+- ✅ Toggle zwischen **Monatsansicht** und **Jahresplan** im Kalender-View
+- ✅ Balken nach Phase: 🔵 Säen (Accent) · 🟤 Wachsen (Primary) · 🟢 Ernte (Success)
+- ✅ Pflanzen aus dem Katalog (`plants.js`) als Datenbasis, nach Beet gruppiert
+- ✅ Aktueller Monat hervorgehoben, Legende, Leer-Zustand
+
+---
+
+## ✅ 4b. Wetter & Frost-API — ERLEDIGT
+
+- ✅ **Open-Meteo** (kostenlos, kein API-Key): Geocoding + 7-Tage-Forecast
+- ✅ **Standort-Eingabe** in Einstellungen: City-Autocomplete speichert `{ city, lat, lon }`
+- ✅ **Wetter-Widget** im Dashboard: 7 Tage, Emoji, Min/Max-Temp, Niederschlag
+- ✅ **Frost-Warnung** als Alert-Banner wenn Nachttemperatur < 2 °C
+- ✅ **Cache:** Wetterdaten 1h in localStorage gecacht, bei Standortwechsel geleert
+
+---
+
+## ✅ Bugfixes & UX-Korrekturen — ERLEDIGT
+
+- ✅ **Maßverhältnisse Beete:** Eingabe und Anzeige in Metern (intern cm) — konsistent mit Gartenmaßen
+- ✅ **Aufbauhöhe in Metern:** BedEditor + SettingsManager zeigen Höhen in m statt cm
+- ✅ **Schattengröße:** Physikalisch korrekte Elevation-Formel (war 10× zu klein)
+- ✅ **Schatten-Offset-Cap:** Max 48px — verhindert losgelöstes Ghost-Duplikat bei großen Objekten
+- ✅ **Lineal / Zeichenvorschau:** Doppelter Canvas-Transform entfernt — Preview liegt jetzt am Mauszeiger
+
+---
+
+## 🔧 5. Quick Wins & UX-Verbesserungen — OFFEN
+
+Kleinere Features mit hohem Alltagsnutzen:
+
+1. **Undo / Redo** ⭐
+   Rückgängig/Wiederholen für alle Canvas-Aktionen (Verschieben, Löschen, Zeichnen). Aktuell führt jeder Fehler zu manuellem Aufräumen.
+
+2. **Beet kopieren / einfügen**
+   Gleiche Beete mehrfach verwenden ohne jedes Mal neu zu konfigurieren.
+
+3. **„Alles einpassen"-Zoom**
+   Button der den Garten zentriert und vollständig sichtbar macht (z. B. beim Öffnen oder nach dem Zeichnen).
+
+4. **Fläche beim Zeichnen anzeigen**
+   Beim Aufziehen eines Rechtecks/Kreises die Fläche in m² live neben dem Cursor anzeigen.
+
+5. **Standort für Sonnenberechnung nutzen**
+   Den gespeicherten Breiten-/Längengrad (aus Wetter-Einstellungen) für die Schattensimulation verwenden statt hartkodierter 50°N.
+
+6. **Mehr Pflanzen im Katalog**
+   Aktuell 51 Pflanzen — Erweiterung um häufige Sorten (z. B. Zucchini-Varianten, Beerenobst, Heilkräuter).
+
+---
+
+## 🌱 6. Gärtner-Features — OFFEN
+
+Features die die App im Alltag über die Saison relevant halten:
+
+1. **Fruchtfolge-Assistent** ⭐
+   Nach der Saison Empfehlungen für das Folgejahr: „Hier war Tomate (Starkzehrer) → nächstes Jahr Bohne (Schwachzehrer)". Basiert auf Nährstoffbedarf aus `plants.js` (`nutrition: 'stark'/'mittel'/'schwach'`).
+
+2. **Ernte-Protokoll**
+   Pro Beet/Pflanze: wann geerntet, wieviel (kg/Stück), Notiz. Ermöglicht Jahresvergleiche und Planung der Menge für Folgejahr.
+
+3. **Gieß- & Dünge-Kalender**
+   Erinnerungen pro Beet oder Pflanze (z. B. „Tomate alle 2–3 Tage gießen"). Integration in den bestehenden Aufgaben-Tab.
+
+4. **Saison-Archiv**
+   Aktuellen Gartenstatus eines Jahres „einfrieren" (Read-only-Kopie) um Vorjahres-Bepflanzung als Referenz zu behalten.
+
+5. **Aussaat-Erinnerungen**
+   Push-Notifications oder Dashboard-Hinweis: „In 2 Wochen ist ideale Aussaatzeit für Tomaten (laut Standort & Gantt)".
+
+---
+
+## 🚀 7. Größere Features — OFFEN
+
+Aufwändigere Features mit Alleinstellungsmerkmal gegenüber Stift & Papier:
+
+1. **Mischkultur-Visualisierung auf Canvas** ⭐
+   Gute/schlechte Nachbarn zwischen benachbarten Beeten als farbige Verbindungslinien oder Warn-Icons direkt im Gartenplan sichtbar machen.
+
+2. **Drucken / PDF-Export des Gartenplans**
+   Den Canvas-Gartenplan als sauber formatiertes PDF exportieren — inkl. Pflanzliste, Legende und Beet-Details.
+
+3. **Mobile-Optimierung**
+   Pinch-to-Zoom, bessere Touch-Targets, vereinfachte Ansicht für den Einsatz im Garten mit dem Smartphone.
+
+4. **Erweiterter Jahresplan**
+   Tatsächliche Pflanz- und Erntedaten als Overlay über den Katalog-Richtwerten im Gantt; Lücken-Analyse für Nachkulturen.
+
+5. **KI-Assistent (Auto-Layout)**
+   Leeres Beet anlegen → „Generieren" → App befüllt es automatisch mit perfekt gematchten Mischkulturen basierend auf Beetgröße, Lichtverhältnissen und bereits geplanten Nachbarbeeten.
+
+---
+
+## ☁️ 8. Cloud & SaaS — ZURÜCKGESTELLT
+
+Erst relevant wenn das Tool vermarktet werden soll:
+
+- **Authentifizierung** (Supabase / Firebase): E-Mail- oder Google-Login
+- **Cloud-Datenbank-Sync:** `Store.save()` / `load()` gegen Cloud-API statt lokalen Server
+- **Bezahl-Schranke (Stripe):**
+  - *Free-Tier:* 1 Garten, Basis-Pflanzenkatalog
+  - *Pro-Tier (Abo):* Unbegrenzte Gärten, Frost-Alarm, Fruchtfolge-Assistent, KI-Layout
