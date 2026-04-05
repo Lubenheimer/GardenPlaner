@@ -1,0 +1,284 @@
+import { store } from '../core/Store.js';
+import { bus } from '../core/EventBus.js';
+
+export function renderSetup() {
+  const container = document.getElementById('setup-content');
+  if (!container) return;
+  
+  container.innerHTML = renderSettingsManager();
+
+  // Attach event listeners after HTML is bound
+  setTimeout(() => {
+    bindSettingsEvents(container, () => renderSetup());
+  }, 0);
+}
+
+export function renderSettingsManager() {
+  const levels = store.getLevels();
+  const types = store.getElementTypes();
+
+  return `
+    <div class="config-container dashboard-section animate-in" style="margin-top: 24px;">
+      <h2>⚙️ Garten-Einstellungen</h2>
+      <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap; margin-top: 16px;">
+        
+        <!-- Grundstück -->
+        <div class="config-section" style="flex: 1; min-width: 250px;">
+          <h3>📐 Grundstück & Maße</h3>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 12px;">Definiere die Ausmaße deines Gartens in Metern (m). Das Raster passt sich automatisch an.</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; font-weight: 500;">Breite (X-Achse, m)</span>
+              <input type="number" id="config-garden-width" class="form-input" value="${(store.getGarden().width / 100).toFixed(2)}" step="0.1" style="width: 100px;">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; font-weight: 500;">Länge (Y-Achse, m)</span>
+              <input type="number" id="config-garden-height" class="form-input" value="${(store.getGarden().height / 100).toFixed(2)}" step="0.1" style="width: 100px;">
+            </div>
+            <button id="config-garden-save" class="btn btn-secondary btn-sm" style="margin-top: 8px;">Maße anwenden</button>
+          </div>
+        </div>
+
+        <!-- Levels -->
+        <div class="config-section" style="flex: 1; min-width: 250px;">
+          <h3>⛰️ Höhen-Ebenen</h3>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 12px;">Definiere die physischen Ebenen / Terrassen in deinem Garten. Der Z-Index bestimmt die Überlagerung und den Schatteneffekt.</p>
+          
+          <div class="list-group" id="config-levels-list">
+            ${levels.sort((a,b) => a.zIndex - b.zIndex).map(l => `
+              <div class="list-item" style="display:flex; justify-content:space-between; align-items:center; padding: 8px; border: var(--glass-border); margin-bottom: 8px; border-radius: 4px; background: rgba(0,0,0,0.05);">
+                <div>
+                  <strong>${l.name}</strong> <span style="font-size:10px; color:var(--color-text-muted)">(Höhe: ${l.zIndex})</span>
+                </div>
+                <button class="icon-btn small delete-level-btn" data-id="${l.id}" ${levels.length <= 1 ? 'disabled style="opacity: 0.3"' : ''}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <input type="text" id="new-level-name" class="form-input" placeholder="Neue Ebene" style="flex: 1;">
+            <input type="number" id="new-level-z" class="form-input" placeholder="Z" style="width: 60px;" value="${levels.length}">
+            <button id="add-level-btn" class="btn btn-primary" style="padding: 0 12px;">+</button>
+          </div>
+        </div>
+
+        <!-- Types -->
+        <div class="config-section" style="flex: 1; min-width: 250px;">
+          <h3>🎨 Flächen-Typen</h3>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 12px;">Erstelle neue Elemente wie Teich, Sandkasten oder Hecke.</p>
+          
+          <div class="list-group" id="config-types-list">
+            ${types.map(t => `
+              <div class="list-item" style="display:flex; justify-content:space-between; align-items:center; padding: 8px; border: var(--glass-border); margin-bottom: 8px; border-radius: 4px; background: rgba(0,0,0,0.05);">
+                <div style="display:flex; align-items:center; gap: 8px;">
+                  <span style="width: 16px; height: 16px; border-radius: 3px; background: ${t.color}"></span>
+                  <strong>${t.name}</strong> 
+                  <span style="font-size:10px; color:var(--color-text-muted)">(${t.category || 'Fläche'}, ${t.defaultHeight || 0}cm)</span>
+                  ${t.hasPlantings ? '<span title="Bepflanzbar" style="font-size: 12px;">🌱</span>' : ''}
+                </div>
+                <button class="icon-btn small delete-type-btn" data-id="${t.id}" ${types.length <= 1 ? 'disabled style="opacity: 0.3"' : ''}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div style="display: flex; gap: 8px; margin-top: 12px; flex-direction: column;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="new-type-name" class="form-input" placeholder="Neuer Typ (z.B. Sandkasten)" style="flex: 1;">
+              <input type="color" id="new-type-color" class="form-input" value="#fcd34d" style="width: 40px; padding: 0;">
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="new-type-category" class="form-input" style="flex:1; padding: 4px;">
+                <option value="object">Objekt / Aufbau</option>
+                <option value="area">Fläche / Boden</option>
+                <option value="line">Zaun / Linie</option>
+              </select>
+              <input type="number" id="new-type-height" class="form-input" placeholder="Höhe in cm" style="width: 80px;" value="0">
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label style="font-size: 12px; display:flex; align-items:center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="new-type-plantings"> Bepflanzbar?
+              </label>
+              <button id="add-type-btn" class="btn btn-secondary btn-sm" style="padding: 4px 12px;">Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backup -->
+        <div class="config-section" style="flex: 1; min-width: 250px;">
+          <h3>💾 Backup & Speicher</h3>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 12px;">Erstelle eine Sicherungskopie, um deinen Garten aufzubewahren oder auf ein anderes Gerät zu übertragen.</p>
+          <div style="display: flex; gap: 8px; flex-direction: column;">
+            <button id="backup-export-btn" class="btn btn-primary" style="justify-content: center; width: 100%;">
+               Exportieren (Download)
+            </button>
+            <div style="position: relative; margin-top: 12px;">
+              <input type="file" id="backup-import-input" accept=".json" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+              <button class="btn btn-secondary" style="justify-content: center; width: 100%; pointer-events: none;">
+                 Importieren (Wiederherstellen)
+              </button>
+            </div>
+            <button id="export-image-btn" class="btn btn-secondary" style="justify-content: center; width: 100%; margin-top: 12px;">
+               🖼️ Als Bild speichern (PNG)
+            </button>
+            <p style="font-size: 10px; color: var(--color-text-muted); margin-top: 4px; text-align: center;">Vorsicht: Beim Import werden aktuelle Daten überschrieben.</p>
+            
+            <hr style="margin: 16px 0; border: 0; border-top: 1px solid var(--border-color);">
+            <button id="danger-reset-btn" class="btn" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5); justify-content: center; width: 100%;">
+               🧨 Garten komplett löschen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function bindSettingsEvents(containerBlock, onUpdateCallback) {
+  // Garden dimensions
+  containerBlock.querySelector('#config-garden-save')?.addEventListener('click', () => {
+    const wStr = containerBlock.querySelector('#config-garden-width').value;
+    const hStr = containerBlock.querySelector('#config-garden-height').value;
+    const w = Math.round((parseFloat(wStr) || 20) * 100);
+    const h = Math.round((parseFloat(hStr) || 15) * 100);
+    store.updateGarden({ width: w, height: h, shape: 'rect' });
+    onUpdateCallback?.();
+  });
+
+  // Add Level
+  containerBlock.querySelector('#add-level-btn')?.addEventListener('click', () => {
+    const name = containerBlock.querySelector('#new-level-name').value.trim();
+    const z = parseInt(containerBlock.querySelector('#new-level-z').value) || 0;
+    if (!name) return;
+    const levels = store.getLevels();
+    levels.push({ id: 'level-' + Date.now(), name, zIndex: z });
+    store.updateLevels(levels);
+    onUpdateCallback?.();
+  });
+
+  // Delete Level
+  containerBlock.querySelectorAll('.delete-level-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      let levels = store.getLevels();
+      if (levels.length > 1) {
+        levels = levels.filter(l => l.id !== id);
+
+        // move beds from deleted layer to first available
+        store.getBeds().forEach(bed => {
+          if(bed.levelId === id) store.updateBed(bed.id, {levelId: levels[0].id});
+        });
+
+        store.updateLevels(levels);
+        onUpdateCallback?.();
+      }
+    });
+  });
+
+  // Add Type
+  containerBlock.querySelector('#add-type-btn')?.addEventListener('click', () => {
+    const name = containerBlock.querySelector('#new-type-name').value.trim();
+    const color = containerBlock.querySelector('#new-type-color').value;
+    const category = containerBlock.querySelector('#new-type-category').value;
+    const defaultHeight = parseInt(containerBlock.querySelector('#new-type-height').value) || 0;
+    const hasPlantings = containerBlock.querySelector('#new-type-plantings').checked;
+    if (!name) return;
+    const types = store.getElementTypes();
+    types.push({ id: 'type-' + Date.now(), name, color, category, defaultHeight, hasPlantings });
+    store.updateElementTypes(types);
+    onUpdateCallback?.();
+  });
+
+  // Delete Type
+  containerBlock.querySelectorAll('.delete-type-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      let types = store.getElementTypes();
+      if (types.length > 1) {
+        types = types.filter(t => t.id !== id);
+
+        // move beds from deleted type to first available
+        store.getBeds().forEach(bed => {
+          if(bed.kind === id) store.updateBed(bed.id, {kind: types[0].id});
+        });
+
+        store.updateElementTypes(types);
+        onUpdateCallback?.();
+      }
+    });
+  });
+
+  // Backup Export
+  containerBlock.querySelector('#backup-export-btn')?.addEventListener('click', () => {
+    const raw = localStorage.getItem('gartenplaner_data');
+    if (!raw) return alert('Keine Daten zum Exportieren gefunden.');
+    const blob = new Blob([raw], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GartenPlaner_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Backup Import
+  containerBlock.querySelector('#backup-import-input')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const text = ev.target.result;
+        JSON.parse(text); // validate
+        localStorage.setItem('gartenplaner_data', text);
+        alert('Backup erfolgreich wiederhergestellt! Die Seite wird nun neu geladen.');
+        location.reload();
+      } catch (err) {
+        alert('Fehler beim Importieren: Die Datei ist ungültig oder beschädigt.');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Image Export
+  containerBlock.querySelector('#export-image-btn')?.addEventListener('click', () => {
+    const container = document.querySelector('.canvas-container');
+    if (!container) return;
+    const canvases = Array.from(container.querySelectorAll('canvas'));
+    if (canvases.length === 0) return;
+    
+    const offscreen = document.createElement('canvas');
+    offscreen.width = canvases[0].width;
+    offscreen.height = canvases[0].height;
+    const ctx = offscreen.getContext('2d');
+    
+    canvases.sort((a,b) => {
+       const da = parseFloat(a.style.getPropertyValue('--depth')) || 0;
+       const db = parseFloat(b.style.getPropertyValue('--depth')) || 0;
+       return da - db;
+    });
+
+    canvases.forEach(c => {
+      ctx.drawImage(c, 0, 0);
+    });
+
+    const url = offscreen.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Garten_Export_${new Date().toISOString().split('T')[0]}.png`;
+    a.click();
+  });
+
+  // Reset Everything
+  containerBlock.querySelector('#danger-reset-btn')?.addEventListener('click', () => {
+    if (confirm('BIST DU SICHER?\nAlle deine Beete, Pflanzen, Einstellungen und Fotos werden unwiderruflich gelöscht!')) {
+      if (confirm('WIRKLICH ALLES LÖSCHEN? (Dies kann nicht mehr rückgängig gemacht werden!)')) {
+        localStorage.removeItem('gartenplaner_data');
+        location.reload();
+      }
+    }
+  });
+}

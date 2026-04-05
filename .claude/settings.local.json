@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs wc:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm install:*)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(Invoke-RestMethod -Uri \"http://localhost:3001/api/health\" -Method GET)",
+      "Bash(ConvertTo-Json)",
+      "Bash(npm run:*)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}
