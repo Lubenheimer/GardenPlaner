@@ -32,7 +32,7 @@ jobs:
           cache: npm
 
       - name: Abhängigkeiten installieren
-        run: npm ci
+        run: npm install
 
       - name: Frontend bauen
         run: npm run build
