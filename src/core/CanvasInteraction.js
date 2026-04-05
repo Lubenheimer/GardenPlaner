@@ -387,11 +387,12 @@ export class CanvasInteraction {
   }
 
   drawPreview(ctx) {
+    // Hinweis: ctx ist bereits mit translate(offsetX, offsetY) + scale(zoom) transformiert
+    // (durch _draw() in CanvasRenderer). Hier NUR Linestyle-spezifische save/restore.
+
     if (this.tool === 'polygon' || this.tool === 'line') {
       if (this.polygonPoints && this.polygonPoints.length > 0) {
         ctx.save();
-        ctx.translate(this.renderer.offsetX, this.renderer.offsetY);
-        ctx.scale(this.renderer.zoom, this.renderer.zoom);
         ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
         ctx.strokeStyle = '#4ade80';
         ctx.lineWidth = 4;
@@ -399,19 +400,17 @@ export class CanvasInteraction {
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(this.polygonPoints[0].x, this.polygonPoints[0].y);
-        for(let i=1; i<this.polygonPoints.length; i++) {
+        for (let i = 1; i < this.polygonPoints.length; i++) {
           ctx.lineTo(this.polygonPoints[i].x, this.polygonPoints[i].y);
         }
         if (this.lastHoverPoint) {
-           ctx.lineTo(this.lastHoverPoint.x, this.lastHoverPoint.y);
+          ctx.lineTo(this.lastHoverPoint.x, this.lastHoverPoint.y);
         }
         ctx.stroke();
         ctx.restore();
       }
     } else if (this.tool === 'measure' && this.drawStart && this.measureEnd) {
       ctx.save();
-      ctx.translate(this.renderer.offsetX, this.renderer.offsetY);
-      ctx.scale(this.renderer.zoom, this.renderer.zoom);
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 5]);
@@ -419,21 +418,23 @@ export class CanvasInteraction {
       ctx.moveTo(this.drawStart.x, this.drawStart.y);
       ctx.lineTo(this.measureEnd.x, this.measureEnd.y);
       ctx.stroke();
-      
-      const distPx = Math.sqrt(Math.pow(this.measureEnd.x - this.drawStart.x, 2) + Math.pow(this.measureEnd.y - this.drawStart.y, 2));
+
+      const distPx = Math.sqrt(
+        Math.pow(this.measureEnd.x - this.drawStart.x, 2) +
+        Math.pow(this.measureEnd.y - this.drawStart.y, 2)
+      );
       const cx = (this.drawStart.x + this.measureEnd.x) / 2;
       const cy = (this.drawStart.y + this.measureEnd.y) / 2;
-      
+
+      ctx.setLineDash([]);
       ctx.fillStyle = '#ef4444';
-      ctx.font = `bold ${14/this.renderer.zoom}px Inter`;
+      ctx.font = `bold ${14 / this.renderer.zoom}px Inter`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(`${Math.round(distPx)} cm`, cx, cy - 8);
+      ctx.fillText(`${(distPx / 100).toFixed(2)} m`, cx, cy - 8);
       ctx.restore();
     } else if (this.isDrawing && this.drawStart && this.lastHoverPoint && ['rect', 'circle', 'lshaped'].includes(this.tool)) {
       ctx.save();
-      ctx.translate(this.renderer.offsetX, this.renderer.offsetY);
-      ctx.scale(this.renderer.zoom, this.renderer.zoom);
       ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
       ctx.strokeStyle = '#4ade80';
       ctx.lineWidth = 2;
@@ -442,17 +443,17 @@ export class CanvasInteraction {
       const h = Math.abs(this.lastHoverPoint.y - this.drawStart.y);
       const x = Math.min(this.drawStart.x, this.lastHoverPoint.x);
       const y = Math.min(this.drawStart.y, this.lastHoverPoint.y);
-      
+
       if (this.tool === 'circle') {
-         ctx.beginPath();
-         ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
-         ctx.fill();
-         ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
       } else {
-         ctx.beginPath();
-         ctx.roundRect(x, y, w, h, 4);
-         ctx.fill();
-         ctx.stroke();
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 4);
+        ctx.fill();
+        ctx.stroke();
       }
       ctx.restore();
     }
