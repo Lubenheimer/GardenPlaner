@@ -107,6 +107,28 @@ export function renderSettingsManager() {
           </div>
         </div>
 
+        <!-- Standort -->
+        <div class="config-section" style="flex: 1; min-width: 250px;">
+          <h3>📍 Standort & Wetter</h3>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 12px;">
+            Gib deinen Standort an, um aktuelle Wetterdaten und Frostwarnungen im Dashboard zu sehen.
+          </p>
+          ${(() => {
+            const loc = store.getSettings().location || {};
+            return loc.city ? `
+              <div class="location-selected-badge">
+                📍 ${loc.city}
+                <button id="location-clear-btn" style="background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:0 0 0 4px;font-size:12px;" title="Standort entfernen">✕</button>
+              </div>
+              <p style="font-size:11px; color:var(--color-text-muted); margin-top:6px;">Koordinaten: ${loc.lat?.toFixed(3)}, ${loc.lon?.toFixed(3)}</p>
+            ` : '';
+          })()}
+          <div class="location-search-wrapper" style="margin-top: 10px;">
+            <input type="text" id="location-search-input" class="form-input" placeholder="Stadt suchen (z.B. Berlin, Wien, Zürich)..." autocomplete="off">
+            <div class="location-result-list" id="location-results" style="display:none;"></div>
+          </div>
+        </div>
+
         <!-- Backup -->
         <div class="config-section" style="flex: 1; min-width: 250px;">
           <h3>💾 Backup & Speicher</h3>
@@ -138,6 +160,64 @@ export function renderSettingsManager() {
 }
 
 export function bindSettingsEvents(containerBlock, onUpdateCallback) {
+  // ── Location / City Search ────────────────────────────────────────
+  const locationInput  = containerBlock.querySelector('#location-search-input');
+  const locationResults = containerBlock.querySelector('#location-results');
+
+  let _locationTimer = null;
+  locationInput?.addEventListener('input', () => {
+    clearTimeout(_locationTimer);
+    const q = locationInput.value.trim();
+    if (q.length < 2) { locationResults.style.display = 'none'; return; }
+    _locationTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=de&format=json`
+        );
+        const data = await res.json();
+        const results = data.results || [];
+        if (results.length === 0) {
+          locationResults.innerHTML = `<div class="location-result-item" style="color:var(--color-text-muted);">Keine Ergebnisse</div>`;
+        } else {
+          locationResults.innerHTML = results.map(r => `
+            <div class="location-result-item" data-lat="${r.latitude}" data-lon="${r.longitude}" data-city="${r.name}${r.admin1 ? ', ' + r.admin1 : ''}">
+              <span>📍</span>
+              <span>${r.name}${r.admin1 ? ' <span style="color:var(--color-text-muted)">' + r.admin1 + '</span>' : ''}</span>
+              <span class="loc-country">${r.country || ''}</span>
+            </div>
+          `).join('');
+          locationResults.querySelectorAll('.location-result-item[data-lat]').forEach(item => {
+            item.addEventListener('click', () => {
+              const loc = {
+                city: item.dataset.city,
+                lat:  parseFloat(item.dataset.lat),
+                lon:  parseFloat(item.dataset.lon),
+              };
+              store.updateSettings({ location: loc });
+              // Clear weather cache so it re-fetches
+              localStorage.removeItem('gp_weather_cache');
+              locationResults.style.display = 'none';
+              onUpdateCallback?.();
+            });
+          });
+        }
+        locationResults.style.display = 'block';
+      } catch {
+        locationResults.style.display = 'none';
+      }
+    }, 350);
+  });
+
+  locationInput?.addEventListener('blur', () => {
+    setTimeout(() => { locationResults.style.display = 'none'; }, 200);
+  });
+
+  containerBlock.querySelector('#location-clear-btn')?.addEventListener('click', () => {
+    store.updateSettings({ location: { city: '', lat: null, lon: null } });
+    localStorage.removeItem('gp_weather_cache');
+    onUpdateCallback?.();
+  });
+
   // Garden dimensions
   containerBlock.querySelector('#config-garden-save')?.addEventListener('click', () => {
     const wStr = containerBlock.querySelector('#config-garden-width').value;

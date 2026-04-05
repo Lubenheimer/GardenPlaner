@@ -45,6 +45,7 @@ const defaultState = {
     theme: 'dark',
     showGrid: true,
     gridSize: 20,
+    location: { city: '', lat: null, lon: null },
   },
 };
 

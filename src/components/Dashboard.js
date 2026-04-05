@@ -4,6 +4,112 @@
 import { store } from '../core/Store.js';
 import { statusLabels, statusEmojis, formatDate } from '../utils/helpers.js';
 import { getSowingPlants, getHarvestPlants, monthNames } from '../data/plants.js';
+
+// ── Wetter-Hilfsfunktionen ─────────────────────────────────────────
+
+const WEATHER_CACHE_KEY = 'gp_weather_cache';
+const WEATHER_CACHE_TTL = 60 * 60 * 1000; // 1 Stunde
+
+function weatherCodeToEmoji(code) {
+  if (code === 0)                 return '☀️';
+  if (code <= 3)                  return '🌤️';
+  if (code <= 48)                 return '🌫️';
+  if (code <= 67)                 return '🌧️';
+  if (code <= 77)                 return '❄️';
+  if (code <= 82)                 return '🌦️';
+  if (code <= 86)                 return '🌨️';
+  return '⛈️';
+}
+
+function weatherCodeToLabel(code) {
+  if (code === 0)  return 'Klar';
+  if (code <= 3)   return 'Heiter';
+  if (code <= 48)  return 'Neblig';
+  if (code <= 55)  return 'Nieselregen';
+  if (code <= 67)  return 'Regen';
+  if (code <= 77)  return 'Schnee';
+  if (code <= 82)  return 'Regenschauer';
+  if (code <= 86)  return 'Schneeschauer';
+  return 'Gewitter';
+}
+
+async function fetchWeather(lat, lon, city) {
+  // Cache prüfen
+  try {
+    const cached = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null');
+    if (cached && cached.city === city && (Date.now() - cached.ts) < WEATHER_CACHE_TTL) {
+      return cached.data;
+    }
+  } catch { /* ignore */ }
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode`
+    + `&forecast_days=7&timezone=auto`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Wetterdaten nicht verfügbar');
+  const json = await res.json();
+
+  const data = json.daily.time.map((date, i) => ({
+    date,
+    tempMax:    Math.round(json.daily.temperature_2m_max[i]),
+    tempMin:    Math.round(json.daily.temperature_2m_min[i]),
+    precip:     json.daily.precipitation_sum[i],
+    code:       json.daily.weathercode[i],
+  }));
+
+  try {
+    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ city, ts: Date.now(), data }));
+  } catch { /* ignore */ }
+
+  return data;
+}
+
+function renderWeatherWidget(weatherData, city) {
+  const today = new Date().toISOString().split('T')[0];
+  const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+  const frostDays = weatherData.filter(d => d.tempMin < 2).map(d => {
+    const dt = new Date(d.date);
+    return dayNames[dt.getDay()];
+  });
+
+  return `
+    <div class="weather-widget animate-in">
+      <div class="weather-widget-header">
+        <div class="weather-location">
+          <span class="weather-location-icon">📍</span>
+          ${city}
+        </div>
+        <span class="weather-updated">7-Tage-Vorschau</span>
+      </div>
+
+      <div class="weather-forecast">
+        ${weatherData.map(d => {
+          const dt = new Date(d.date);
+          const isToday = d.date === today;
+          const isFrost = d.tempMin < 2;
+          return `
+            <div class="weather-day ${isToday ? 'today' : ''}">
+              <div class="weather-day-name">${isToday ? 'Heute' : dayNames[dt.getDay()]}</div>
+              <div class="weather-emoji" title="${weatherCodeToLabel(d.code)}">${weatherCodeToEmoji(d.code)}</div>
+              <div class="weather-temp-max">${d.tempMax}°</div>
+              <div class="weather-temp-min ${isFrost ? 'frost' : ''}">${isFrost ? '🥶' : ''}${d.tempMin}°</div>
+              ${d.precip > 0.1 ? `<div class="weather-precip">💧${d.precip.toFixed(1)}</div>` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${frostDays.length > 0 ? `
+        <div class="weather-frost-alert">
+          ❄️ <strong>Frostgefahr</strong> — Empfindliche Pflanzen schützen! (${frostDays.join(', ')})
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 export function renderDashboard() {
   const container = document.getElementById('dashboard-content');
   const beds = store.getBeds();
@@ -44,7 +150,16 @@ export function renderDashboard() {
     if (statusCounts[p.status] !== undefined) statusCounts[p.status]++;
   });
 
+  // Wetter-Widget: Platzhalter einsetzen, dann async nachladen
+  const loc = store.getSettings().location || {};
+  const weatherPlaceholder = loc.lat
+    ? `<div id="weather-widget-container"><div class="weather-widget animate-in" style="display:flex;align-items:center;gap:12px;padding:var(--space-lg);color:var(--color-text-muted);font-size:var(--font-size-sm);">⏳ Wetterdaten werden geladen...</div></div>`
+    : `<div id="weather-widget-container"><div class="weather-no-location">🌤️ <span>Kein Standort gesetzt — <a id="go-to-settings">Standort in Einstellungen festlegen</a></span></div></div>`;
+
   container.innerHTML = `
+    <!-- Wetter -->
+    ${weatherPlaceholder}
+
     <!-- Stats Row -->
     <div class="dashboard-stats animate-in" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
       <div class="stat-card" style="flex: 1; min-width: 150px;">
@@ -183,8 +298,23 @@ export function renderDashboard() {
     </div>
   `;
 
+  // Wetter async nachladen
+  if (loc.lat) {
+    fetchWeather(loc.lat, loc.lon, loc.city).then(data => {
+      const wc = document.getElementById('weather-widget-container');
+      if (wc) wc.innerHTML = renderWeatherWidget(data, loc.city);
+    }).catch(() => {
+      const wc = document.getElementById('weather-widget-container');
+      if (wc) wc.innerHTML = `<div class="weather-no-location">⚠️ Wetterdaten konnten nicht geladen werden.</div>`;
+    });
+  }
+
   // Bind Events for Dashboard
   setTimeout(() => {
+    document.getElementById('go-to-settings')?.addEventListener('click', () => {
+      document.querySelector('.nav-btn[data-view="setup"]')?.click();
+    });
+
     document.getElementById('add-expense-btn')?.addEventListener('click', () => {
       const name = prompt('Wofür wurde Geld ausgegeben? (z.B. Blumenerde)');
       if (!name) return;
