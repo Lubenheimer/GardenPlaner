@@ -1,3 +1,6 @@
+# Persönliche Gartendaten — nicht in Git eincheken
+server/garden-data.json
+
 # Logs
 logs
 *.log
