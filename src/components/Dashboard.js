@@ -160,6 +160,44 @@ export function renderDashboard() {
     <!-- Wetter -->
     ${weatherPlaceholder}
 
+    <!-- Überfällige Tasks Alert -->
+    ${(() => {
+      const tasks = store.getTasks();
+      const todayStr = new Date().toISOString().split('T')[0];
+      const overdue = tasks.filter(t => !t.completed && t.dueDate && t.dueDate < todayStr);
+      if (overdue.length === 0) return '';
+      return `
+        <div class="animate-in" style="
+          background: rgba(239,68,68,0.08);
+          border: 1px solid rgba(239,68,68,0.35);
+          border-radius: var(--radius-md);
+          padding: var(--space-md) var(--space-lg);
+          display: flex;
+          align-items: center;
+          gap: var(--space-md);
+          flex-wrap: wrap;
+        ">
+          <span style="font-size: 22px; flex-shrink: 0;">⚠️</span>
+          <div style="flex: 1; min-width: 200px;">
+            <div style="font-weight: 700; color: var(--color-danger); margin-bottom: 4px;">
+              ${overdue.length} überfällige Aufgabe${overdue.length > 1 ? 'n' : ''}
+            </div>
+            <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+              ${overdue.slice(0, 3).map(t => `📋 ${t.title}`).join('  ·  ')}${overdue.length > 3 ? `  · +${overdue.length - 3} weitere` : ''}
+            </div>
+          </div>
+          <a id="go-to-tasks-alert" style="
+            font-size: var(--font-size-sm);
+            color: var(--color-danger);
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            text-decoration: none;
+          ">Aufgaben öffnen →</a>
+        </div>
+      `;
+    })()}
+
     <!-- Stats Row -->
     <div class="dashboard-stats animate-in" style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
       <div class="stat-card" style="flex: 1; min-width: 150px;">
@@ -313,6 +351,10 @@ export function renderDashboard() {
   setTimeout(() => {
     document.getElementById('go-to-settings')?.addEventListener('click', () => {
       document.querySelector('.nav-btn[data-view="setup"]')?.click();
+    });
+
+    document.getElementById('go-to-tasks-alert')?.addEventListener('click', () => {
+      document.querySelector('.nav-btn[data-view="tasks"]')?.click();
     });
 
     document.getElementById('add-expense-btn')?.addEventListener('click', () => {

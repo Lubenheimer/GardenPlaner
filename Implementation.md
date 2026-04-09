@@ -1,6 +1,6 @@
 # Implementierungsplan: GardenPlaner V2
 
-Letzte Aktualisierung: April 2026
+Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 09.04.2026)
 
 ---
 
@@ -69,27 +69,33 @@ Statt reinem `localStorage` ein lokaler Express-Server als persistente Datenbank
 
 ---
 
-## 🔧 5. Quick Wins & UX-Verbesserungen — OFFEN
+## ✅ 5. Quick Wins & UX-Verbesserungen — GRÖSSTENTEILS ERLEDIGT
 
 Kleinere Features mit hohem Alltagsnutzen:
 
-1. **Undo / Redo** ⭐
-   Rückgängig/Wiederholen für alle Canvas-Aktionen (Verschieben, Löschen, Zeichnen). Aktuell führt jeder Fehler zu manuellem Aufräumen.
+- ✅ **Undo / Redo** — `store.undo()` / `store.redo()` mit History-Stack (max. 30 Schritte), Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+- ✅ **Beet kopieren / einfügen** — Clipboard via Ctrl+C / Ctrl+V, Offset +20px, Name mit „(Kopie)"-Suffix; auch Copy-Button im BedEditor
+- ✅ **„Alles einpassen"-Zoom** — `renderer.fitAll()` Button in Toolbar
+- ✅ **Standort für Sonnenberechnung nutzen** — `store.getSettings().location.lat` wird in `CanvasRenderer._drawBed()` für physikalische Elevation genutzt
+- ✅ **Mehr Pflanzen im Katalog** — 71 Pflanzen (Gemüse, Kräuter, Obst, Blumen) inkl. `goodNeighbors`, `badNeighbors`, `nutrition`
 
-2. **Beet kopieren / einfügen**
-   Gleiche Beete mehrfach verwenden ohne jedes Mal neu zu konfigurieren.
+**Noch offen aus diesem Abschnitt:**
 
-3. **„Alles einpassen"-Zoom**
-   Button der den Garten zentriert und vollständig sichtbar macht (z. B. beim Öffnen oder nach dem Zeichnen).
+1. **Fläche beim Zeichnen anzeigen**
+   Beim Aufziehen eines Rechtecks/Kreises die Fläche in m² live neben dem Cursor anzeigen. (`CanvasInteraction.js` → `drawPreview()`)
 
-4. **Fläche beim Zeichnen anzeigen**
-   Beim Aufziehen eines Rechtecks/Kreises die Fläche in m² live neben dem Cursor anzeigen.
+2. **Task-System: Modal statt `prompt()`** 🔴 UX-Blocker
+   `Tasks.js` Z.47–52 nutzt `window.prompt()` — ersetzen durch Inline-Formular mit Feldern: Titel, Fälligkeitsdatum (Date-Picker), Beet-Verknüpfung (Dropdown), Priorität (`high/normal/low`), Kategorie-Tag (🪴/🛠️/💧/🛒).
+   Store-Erweiterung: `priority`, `category` zum Task-Objekt ergänzen.
 
-5. **Standort für Sonnenberechnung nutzen**
-   Den gespeicherten Breiten-/Längengrad (aus Wetter-Einstellungen) für die Schattensimulation verwenden statt hartkodierter 50°N.
+3. **Budget-System: Modal statt `prompt()`** 🔴 UX-Blocker
+   `Dashboard.js` Z.319–322 nutzt `window.prompt()` für Name + Betrag — ersetzen durch Modal mit Kategorie-Picker, Bearbeiten-Funktion und monatlicher Gruppenansicht.
 
-6. **Mehr Pflanzen im Katalog**
-   Aktuell 51 Pflanzen — Erweiterung um häufige Sorten (z. B. Zucchini-Varianten, Beerenobst, Heilkräuter).
+4. ✅ **Sunlight-Feld im BedEditor fehlt im HTML** — ERLEDIGT
+   `BedEditor.js`: `<select id="bed-sunlight-select">` nach dem Feuchtigkeit-Feld eingefügt (☀️/⛅/🌑). Standard-Wert: `partial` wenn noch nicht gesetzt.
+
+5. ✅ **Dashboard: Überfällige Tasks als Alert-Sektion** — ERLEDIGT
+   Tasks mit `dueDate < heute` und `completed = false` erscheinen als roter Alert-Banner oben im Dashboard, inkl. Auflistung der ersten 3 Titel und Link direkt in den Tasks-Tab.
 
 ---
 
@@ -99,17 +105,27 @@ Features die die App im Alltag über die Saison relevant halten:
 
 1. **Fruchtfolge-Assistent** ⭐
    Nach der Saison Empfehlungen für das Folgejahr: „Hier war Tomate (Starkzehrer) → nächstes Jahr Bohne (Schwachzehrer)". Basiert auf Nährstoffbedarf aus `plants.js` (`nutrition: 'stark'/'mittel'/'schwach'`).
+   > ⚠️ Teilweise: Fruchtfolge-Warnung beim Hinzufügen greift bereits (`PlantingModal.js` Z.97–107). Fehlt noch: proaktive Saison-Ende-Empfehlung.
 
-2. **Ernte-Protokoll**
-   Pro Beet/Pflanze: wann geerntet, wieviel (kg/Stück), Notiz. Ermöglicht Jahresvergleiche und Planung der Menge für Folgejahr.
+2. **Ernte-Protokoll** ⭐
+   Pro Beet/Pflanze: wann geerntet, wieviel (kg/Stück), Notiz. Ermöglicht Jahresvergleiche und Mengenplanung.
+   Umsetzung: Button „Ernte erfassen" pro Pflanzung im BedEditor → Modal → gespeichert als `planting.harvests: [{date, amount, unit, notes}]`. Dashboard-Widget: „Diese Saison geerntet: X kg Tomaten…".
 
-3. **Gieß- & Dünge-Kalender**
+3. **Automatische Einkaufsliste** ⭐
+   Alle Pflanzungen mit Status `planned` sollen automatisch Einkaufseinträge erzeugen. Aktuell nur als passiver Hinweistext im Dashboard — kein Check-off, kein Export.
+   Umsetzung: Neue Komponente `ShoppingList.js`, Integration im Dashboard und Tasks-Tab, CSV-Export.
+
+4. **Erweiterte Pflanzungserfassung**
+   Beim Hinzufügen einer Pflanzung fehlen: Anzahl (Stück), Sorte/Varietät (Freitext), Pflanzabstand (cm, aus DB vorbelegt), geplantes Erntedatum (auto-berechnet aus `datePlanted + daysToHarvest`).
+   Ergänzung `plants.js`: Felder `spacing`, `daysToHarvest`, `sunRequirement`.
+
+5. **Gieß- & Dünge-Kalender**
    Erinnerungen pro Beet oder Pflanze (z. B. „Tomate alle 2–3 Tage gießen"). Integration in den bestehenden Aufgaben-Tab.
 
-4. **Saison-Archiv**
+6. **Saison-Archiv**
    Aktuellen Gartenstatus eines Jahres „einfrieren" (Read-only-Kopie) um Vorjahres-Bepflanzung als Referenz zu behalten.
 
-5. **Aussaat-Erinnerungen**
+7. **Aussaat-Erinnerungen**
    Push-Notifications oder Dashboard-Hinweis: „In 2 Wochen ist ideale Aussaatzeit für Tomaten (laut Standort & Gantt)".
 
 ---
@@ -121,16 +137,28 @@ Aufwändigere Features mit Alleinstellungsmerkmal gegenüber Stift & Papier:
 1. **Mischkultur-Visualisierung auf Canvas** ⭐
    Gute/schlechte Nachbarn zwischen benachbarten Beeten als farbige Verbindungslinien oder Warn-Icons direkt im Gartenplan sichtbar machen.
 
-2. **Drucken / PDF-Export des Gartenplans**
+2. **Inter-Beet Mischkultur-Prüfung beim Pflanzen**
+   `PlantingModal.js` prüft aktuell nur Pflanzen *innerhalb* eines Beets. Schlechte Nachbarn in *benachbarten* Beeten (Distanz < X Pixel) werden ignoriert.
+   Umsetzung: Distanzberechnung über Beet-Koordinaten → Warnung „In Beet 'Tomaten' (50 cm entfernt) wächst Kartoffel — schlechter Nachbar!".
+
+3. **Rechtsklick-Kontextmenü auf Canvas**
+   Rechtsklick auf ein Beet → Kontextmenü: Pflanzung hinzufügen, Umbenennen, Duplizieren, Ebene wechseln, Löschen.
+   Umsetzung: `CanvasInteraction.js` via `contextmenu`-Event + positioniertes Overlay-Div.
+
+4. **Jahresstatistik-Ansicht** (neuer Tab 📊)
+   Gesamternte nach Kategorie, aktivste Beete, Ausgaben nach Monat (Bar-Chart via Canvas), Vergleich Vorjahr vs. aktuell, erledigte Tasks nach Monat.
+   Neue Datei: `src/components/Statistics.js`, neuer Nav-Eintrag in `main.js`.
+
+5. **Drucken / PDF-Export des Gartenplans**
    Den Canvas-Gartenplan als sauber formatiertes PDF exportieren — inkl. Pflanzliste, Legende und Beet-Details.
 
-3. **Mobile-Optimierung**
+6. **Mobile-Optimierung**
    Pinch-to-Zoom, bessere Touch-Targets, vereinfachte Ansicht für den Einsatz im Garten mit dem Smartphone.
 
-4. **Erweiterter Jahresplan**
+7. **Erweiterter Jahresplan**
    Tatsächliche Pflanz- und Erntedaten als Overlay über den Katalog-Richtwerten im Gantt; Lücken-Analyse für Nachkulturen.
 
-5. **KI-Assistent (Auto-Layout)**
+8. **KI-Assistent (Auto-Layout)**
    Leeres Beet anlegen → „Generieren" → App befüllt es automatisch mit perfekt gematchten Mischkulturen basierend auf Beetgröße, Lichtverhältnissen und bereits geplanten Nachbarbeeten.
 
 ---

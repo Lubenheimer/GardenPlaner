@@ -67,6 +67,14 @@ export function renderBedEditor(bed) {
               <option value="wet" ${bed.moisture === 'wet' ? 'selected' : ''}>Feucht / Teichrand</option>
             </select>
           </div>
+          <div class="form-group" style="margin: 0; flex: 1;">
+            <label class="form-label" style="font-size: 11px">Sonnenlicht</label>
+            <select class="form-input" id="bed-sunlight-select">
+              <option value="sun" ${bed.sunlight === 'sun' ? 'selected' : ''}>☀️ Vollsonne</option>
+              <option value="partial" ${(bed.sunlight === 'partial' || !bed.sunlight) ? 'selected' : ''}>⛅ Halbschatten</option>
+              <option value="shade" ${bed.sunlight === 'shade' ? 'selected' : ''}>🌑 Schatten</option>
+            </select>
+          </div>
         </div>
       </div>
 
