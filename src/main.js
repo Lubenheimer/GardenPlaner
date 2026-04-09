@@ -21,6 +21,7 @@ import { bedColors } from './utils/helpers.js';
 
 let renderer, interaction;
 let currentView = 'canvas';
+let _clipboard = null;
 
 // ========== Init ==========
 function init() {
@@ -181,6 +182,22 @@ function initToolbar() {
     e.currentTarget.classList.toggle('active', renderer.showGrid);
     store.updateSettings({ showGrid: renderer.showGrid });
     renderer.render();
+  });
+
+  // Undo / Redo buttons
+  document.getElementById('tool-undo')?.addEventListener('click', () => {
+    store.undo();
+    _updateUndoRedoButtons();
+  });
+  document.getElementById('tool-redo')?.addEventListener('click', () => {
+    store.redo();
+    _updateUndoRedoButtons();
+  });
+
+  // Fit-All button
+  document.getElementById('tool-fit')?.addEventListener('click', () => {
+    renderer.fitAll();
+    bus.emit('zoom:changed', renderer.zoom);
   });
 
   // Environment Sliders
@@ -346,6 +363,10 @@ function initEvents() {
         closeRightPanel();
         renderer.render();
       },
+      onCopy: () => {
+        const b = store.getBed(bed.id);
+        if (b) _clipboard = JSON.parse(JSON.stringify(b));
+      },
       onAddPlanting: () => showPlantingModal(bed.id),
       onUpdate: () => { renderBedList(); renderer.render(); },
     });
@@ -365,6 +386,7 @@ function initEvents() {
   bus.on('beds:changed', () => {
     renderBedList();
     renderer.render();
+    _updateUndoRedoButtons();
 
     // Auto-update inputs if editor is open and not actively focused
     if (renderer.selectedBedId) {
@@ -431,6 +453,41 @@ function initEvents() {
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+    // Undo / Redo
+    if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+      e.preventDefault();
+      store.undo();
+      _updateUndoRedoButtons();
+      return;
+    }
+    if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+      e.preventDefault();
+      store.redo();
+      _updateUndoRedoButtons();
+      return;
+    }
+
+    // Copy / Paste
+    if (e.ctrlKey && e.key === 'c' && renderer.selectedBedId) {
+      e.preventDefault();
+      const bed = store.getBed(renderer.selectedBedId);
+      if (bed) _clipboard = JSON.parse(JSON.stringify(bed));
+      return;
+    }
+    if (e.ctrlKey && e.key === 'v' && _clipboard) {
+      e.preventDefault();
+      const newBed = store.addBed({
+        ..._clipboard,
+        x: _clipboard.x + 20,
+        y: _clipboard.y + 20,
+        name: _clipboard.name + ' (Kopie)',
+      });
+      renderer.selectedBedId = newBed.id;
+      bus.emit('bed:selected', newBed);
+      renderer.render();
+      return;
+    }
+
     if ((e.key === 'Delete' || e.key === 'Backspace') && renderer.selectedBedId) {
       store.deleteBed(renderer.selectedBedId);
       renderer.selectedBedId = null;
@@ -446,6 +503,14 @@ function initEvents() {
       renderer.render();
     }
   });
+}
+
+// ========== Undo/Redo button state ==========
+function _updateUndoRedoButtons() {
+  const undoBtn = document.getElementById('tool-undo');
+  const redoBtn = document.getElementById('tool-redo');
+  if (undoBtn) undoBtn.disabled = !store.canUndo();
+  if (redoBtn) redoBtn.disabled = !store.canRedo();
 }
 
 // ========== Server-Status-Indikator ==========

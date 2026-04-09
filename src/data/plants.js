@@ -26,6 +26,11 @@ export const plants = [
   { name: 'Mangold', emoji: '🥬', category: 'Gemüse', sowMonth: [4,5], harvestMonth: [6,7,8,9,10] },
   { name: 'Fenchel', emoji: '🌿', category: 'Gemüse', sowMonth: [5,6], harvestMonth: [8,9,10] },
   { name: 'Lauch', emoji: '🥬', category: 'Gemüse', sowMonth: [3,4], harvestMonth: [9,10,11,12] },
+  { name: 'Aubergine', emoji: '🍆', category: 'Gemüse', sowMonth: [2,3], harvestMonth: [7,8,9,10], nutrition: 'stark', goodNeighbors: ['Bohne', 'Basilikum'], badNeighbors: ['Fenchel'] },
+  { name: 'Spargel', emoji: '🌱', category: 'Gemüse', sowMonth: [3,4], harvestMonth: [4,5,6], nutrition: 'mittel', goodNeighbors: ['Petersilie', 'Basilikum', 'Tomate'], badNeighbors: ['Zwiebel', 'Knoblauch'] },
+  { name: 'Artischocke', emoji: '🌿', category: 'Gemüse', sowMonth: [3,4], harvestMonth: [7,8,9], nutrition: 'stark' },
+  { name: 'Melone', emoji: '🍈', category: 'Gemüse', sowMonth: [4,5], harvestMonth: [8,9,10], nutrition: 'stark', goodNeighbors: ['Mais', 'Sonnenblume'], badNeighbors: ['Kartoffel'] },
+  { name: 'Süßkartoffel', emoji: '🍠', category: 'Gemüse', sowMonth: [5], harvestMonth: [9,10], nutrition: 'mittel' },
 
   // Kräuter
   { name: 'Basilikum', emoji: '🌿', category: 'Kräuter', sowMonth: [4,5], harvestMonth: [6,7,8,9], nutrition: 'mittel', goodNeighbors: ['Tomate'], badNeighbors: ['Raute'] },
@@ -39,6 +44,10 @@ export const plants = [
   { name: 'Koriander', emoji: '🌿', category: 'Kräuter', sowMonth: [4,5,6], harvestMonth: [6,7,8,9] },
   { name: 'Salbei', emoji: '🌿', category: 'Kräuter', sowMonth: [4,5], harvestMonth: [5,6,7,8,9] },
   { name: 'Liebstöckel', emoji: '🌿', category: 'Kräuter', sowMonth: [3,4], harvestMonth: [5,6,7,8,9] },
+  { name: 'Majoran', emoji: '🌿', category: 'Kräuter', sowMonth: [4,5], harvestMonth: [6,7,8,9] },
+  { name: 'Zitronenmelisse', emoji: '🍋', category: 'Kräuter', sowMonth: [3,4,5], harvestMonth: [5,6,7,8,9,10] },
+  { name: 'Estragon', emoji: '🌿', category: 'Kräuter', sowMonth: [3,4], harvestMonth: [5,6,7,8,9] },
+  { name: 'Bohnenkraut', emoji: '🌿', category: 'Kräuter', sowMonth: [4,5], harvestMonth: [7,8,9], goodNeighbors: ['Bohne', 'Zwiebel'] },
 
   // Obst
   { name: 'Erdbeere', emoji: '🍓', category: 'Obst', sowMonth: [3,4,7,8], harvestMonth: [5,6,7], nutrition: 'mittel', goodNeighbors: ['Knoblauch', 'Zwiebel', 'Schnittlauch', 'Spinat'], badNeighbors: ['Kohl'] },
@@ -47,6 +56,8 @@ export const plants = [
   { name: 'Johannisbeere', emoji: '🔴', category: 'Obst', sowMonth: [10,11,3], harvestMonth: [6,7] },
   { name: 'Weintraube', emoji: '🍇', category: 'Obst', sowMonth: [3,4], harvestMonth: [9,10] },
   { name: 'Rhabarber', emoji: '🌿', category: 'Obst', sowMonth: [3,4], harvestMonth: [4,5,6] },
+  { name: 'Brombeere', emoji: '🫐', category: 'Obst', sowMonth: [10,11,3], harvestMonth: [7,8,9] },
+  { name: 'Stachelbeere', emoji: '🟢', category: 'Obst', sowMonth: [10,11,3], harvestMonth: [6,7,8] },
 
   // Blumen
   { name: 'Sonnenblume', emoji: '🌻', category: 'Blumen', sowMonth: [4,5], harvestMonth: [8,9,10] },

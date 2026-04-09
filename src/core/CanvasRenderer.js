@@ -71,6 +71,40 @@ export class CanvasRenderer {
     this.render();
   }
 
+  fitAll(padding = 60) {
+    const beds = store.getBeds();
+    if (!beds.length) {
+      // Fall back to showing the full garden outline
+      const garden = store.getGarden();
+      this.zoom = Math.min(
+        Math.max((this.canvasWidth  - padding * 2) / garden.width,  0.2),
+        Math.max((this.canvasHeight - padding * 2) / garden.height, 0.2),
+        3
+      );
+      this.offsetX = (this.canvasWidth  - garden.width  * this.zoom) / 2;
+      this.offsetY = (this.canvasHeight - garden.height * this.zoom) / 2;
+      this.render();
+      return;
+    }
+    const xs = beds.flatMap(b => [b.x, b.x + (b.width  || 100)]);
+    const ys = beds.flatMap(b => [b.y, b.y + (b.height || 100)]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const bW = maxX - minX || 100;
+    const bH = maxY - minY || 100;
+    const w = this.canvasWidth;
+    const h = this.canvasHeight;
+    const newZoom = Math.min(
+      Math.max((w - padding * 2) / bW, 0.2),
+      Math.max((h - padding * 2) / bH, 0.2),
+      3
+    );
+    this.zoom    = newZoom;
+    this.offsetX = (w - bW * newZoom) / 2 - minX * newZoom;
+    this.offsetY = (h - bH * newZoom) / 2 - minY * newZoom;
+    this.render();
+  }
+
   screenToWorld(sx, sy) {
     return {
       x: (sx - this.offsetX) / this.zoom,
@@ -289,7 +323,8 @@ export class CanvasRenderer {
       // ── Echte Sonnen-Elevation (~50°N Mitteleuropa) ───────────────
       const hourAngleDeg   = (t - 12) * 15;                                // 15°/h vom Mittag
       const declinationDeg = 23.45 * Math.sin((m - 3) / 12 * 2 * Math.PI); // Jahreszeit-Deklination
-      const latRad  = 50 * Math.PI / 180;
+      const lat     = store.getSettings().location?.lat || 50;
+      const latRad  = lat * Math.PI / 180;
       const declRad = declinationDeg * Math.PI / 180;
       const haRad   = hourAngleDeg   * Math.PI / 180;
 

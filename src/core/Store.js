@@ -55,6 +55,52 @@ class Store {
     this.nextId         = this._calculateNextId();
     this._saveTimer     = null;
     this._serverOnline  = false;
+    this._history       = [];
+    this._future        = [];
+    this._historyMax    = 30;
+    this._historyLocked = false;
+  }
+
+  // ── History (Undo/Redo) ────────────────────────────────────────────
+
+  _pushHistory() {
+    if (this._historyLocked) return;
+    this._history.push(JSON.stringify(this._active().beds));
+    if (this._history.length > this._historyMax) this._history.shift();
+    this._future = [];
+  }
+
+  lockHistory() {
+    this._historyLocked = true;
+  }
+
+  unlockHistory() {
+    this._historyLocked = false;
+    this._pushHistory(); // one snapshot after drag/resize ends
+  }
+
+  canUndo() { return this._history.length > 0; }
+  canRedo()  { return this._future.length  > 0; }
+
+  undo() {
+    if (!this.canUndo()) return;
+    this._future.push(JSON.stringify(this._active().beds));
+    this._active().beds = JSON.parse(this._history.pop());
+    this.save();
+    bus.emit('beds:changed', this._active().beds);
+  }
+
+  redo() {
+    if (!this.canRedo()) return;
+    this._history.push(JSON.stringify(this._active().beds));
+    this._active().beds = JSON.parse(this._future.pop());
+    this.save();
+    bus.emit('beds:changed', this._active().beds);
+  }
+
+  _clearHistory() {
+    this._history = [];
+    this._future  = [];
   }
 
   // ── Private helpers ────────────────────────────────────────────────
@@ -204,6 +250,7 @@ class Store {
       if (changed) {
         this.state  = merged;
         this.nextId = this._calculateNextId();
+        this._clearHistory();
         // Lokalen Cache aktualisieren
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); } catch {}
         bus.emit('store:reloaded');
@@ -229,6 +276,7 @@ class Store {
     if (!this.state.gardens.find(g => g.id === id)) return;
     this.state.activeGardenId = id;
     this.nextId = this._calculateNextId();
+    this._clearHistory();
     this.save();
     bus.emit('garden:switched', this._active());
   }
@@ -288,6 +336,7 @@ class Store {
   }
 
   addBed(bed) {
+    this._pushHistory();
     const newBed = {
       id:           this.generateId('bed'),
       name:         bed.name || `Objekt ${this._active().beds.length + 1}`,
@@ -317,6 +366,7 @@ class Store {
   updateBed(id, updates) {
     const bed = this.getBed(id);
     if (!bed) return null;
+    this._pushHistory();
     Object.assign(bed, updates);
     this.save();
     bus.emit('beds:changed', this._active().beds);
@@ -325,6 +375,7 @@ class Store {
   }
 
   deleteBed(id) {
+    this._pushHistory();
     const active = this._active();
     active.beds      = active.beds.filter(b => b.id !== id);
     active.plantings = active.plantings.filter(p => p.bedId !== id);

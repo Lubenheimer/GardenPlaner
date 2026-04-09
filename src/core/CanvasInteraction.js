@@ -100,6 +100,7 @@ export class CanvasInteraction {
       const bed = store.getBed(this.renderer.selectedBedId);
       this.resizeStartBed = { ...bed };
       this.dragStart = { x: world.x, y: world.y };
+      store.lockHistory();
       return;
     }
 
@@ -112,6 +113,7 @@ export class CanvasInteraction {
       this.dragStart = { x: world.x, y: world.y };
       this.dragOffset = { x: bed.x, y: bed.y };
       this.canvas.style.cursor = 'move';
+      store.lockHistory();
       bus.emit('bed:selected', bed);
     } else {
       // Deselect
@@ -315,6 +317,9 @@ export class CanvasInteraction {
       bus.emit('tool:changed', 'select');
     }
 
+    if (this.isDragging || this.isResizing) {
+      store.unlockHistory();
+    }
     this.isDragging = false;
     this.isPanning = false;
     this.isResizing = false;
@@ -455,6 +460,34 @@ export class CanvasInteraction {
         ctx.fill();
         ctx.stroke();
       }
+
+      // Dimension + area label near cursor
+      if (w > 5 && h > 5) {
+        const wM = (w / 100).toFixed(2);
+        const hM = (h / 100).toFixed(2);
+        let areaText;
+        if (this.tool === 'circle') {
+          const rx = w / 2 / 100, ry = h / 2 / 100;
+          areaText = `${wM} × ${hM} m  (${(Math.PI * rx * ry).toFixed(2)} m²)`;
+        } else {
+          areaText = `${wM} × ${hM} m  (${((w * h) / 10000).toFixed(2)} m²)`;
+        }
+        const fontSize = Math.max(12, 14 / this.renderer.zoom);
+        ctx.setLineDash([]);
+        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        const textW = ctx.measureText(areaText).width;
+        const px = this.lastHoverPoint.x + 10 / this.renderer.zoom;
+        const py = this.lastHoverPoint.y - 6 / this.renderer.zoom;
+        ctx.fillStyle = 'rgba(0,0,0,0.65)';
+        ctx.beginPath();
+        ctx.roundRect(px - 4, py - fontSize, textW + 8, fontSize + 6, 4);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(areaText, px, py);
+      }
+
       ctx.restore();
     }
   }
