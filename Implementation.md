@@ -1,6 +1,6 @@
 # Implementierungsplan: GardenPlaner V2
 
-Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 09.04.2026)
+Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 12.04.2026)
 
 ---
 
@@ -103,13 +103,15 @@ Kleinere Features mit hohem Alltagsnutzen:
 
 Features die die App im Alltag über die Saison relevant halten:
 
-1. **Fruchtfolge-Assistent** ⭐
-   Nach der Saison Empfehlungen für das Folgejahr: „Hier war Tomate (Starkzehrer) → nächstes Jahr Bohne (Schwachzehrer)". Basiert auf Nährstoffbedarf aus `plants.js` (`nutrition: 'stark'/'mittel'/'schwach'`).
-   > ⚠️ Teilweise: Fruchtfolge-Warnung beim Hinzufügen greift bereits (`PlantingModal.js` Z.97–107). Fehlt noch: proaktive Saison-Ende-Empfehlung.
+1. ✅ **Fruchtfolge-Assistent** — ERLEDIGT
+   Proaktive Saison-Ende-Empfehlung pro Beet: Analysiert den Nährstoffbedarf (Stark→Mittel→Schwach→Gründüngung→Stark) und empfiehlt konkrete Folgepflanzungen.
+   Implementiert als `CropRotation.js`-Komponente mit Dashboard-Widget. Enthält auch Gründüngungsvorschläge (Gelbsenf, Phacelia, Klee etc.).
+   > Die bestehende Fruchtfolge-Warnung beim Pflanzen (`PlantingModal.js`) bleibt unverändert aktiv.
 
-2. **Ernte-Protokoll** ⭐
-   Pro Beet/Pflanze: wann geerntet, wieviel (kg/Stück), Notiz. Ermöglicht Jahresvergleiche und Mengenplanung.
-   Umsetzung: Button „Ernte erfassen" pro Pflanzung im BedEditor → Modal → gespeichert als `planting.harvests: [{date, amount, unit, notes}]`. Dashboard-Widget: „Diese Saison geerntet: X kg Tomaten…".
+2. ✅ **Ernte-Protokoll** — ERLEDIGT
+   Pro Pflanzung: wann geerntet, wieviel (kg/Stück/Bund/g/l), Notiz. Ermöglicht Saisonvergleiche.
+   Implementiert als `HarvestModal.js` (Modal über 🧺-Button im BedEditor), `Store.addHarvest()`/`getHarvests()`/`deleteHarvest()` API.
+   Dashboard-Widget: „Ernte-Protokoll" zeigt Gesamternte aggregiert nach Pflanze mit Mengen.
 
 3. **Automatische Einkaufsliste** ⭐
    Alle Pflanzungen mit Status `planned` sollen automatisch Einkaufseinträge erzeugen. Aktuell nur als passiver Hinweistext im Dashboard — kein Check-off, kein Export.

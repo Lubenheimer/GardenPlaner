@@ -3,6 +3,7 @@
  */
 import { store } from '../core/Store.js';
 import { bedColors, statusLabels, statusEmojis, formatDate } from '../utils/helpers.js';
+import { showHarvestModal } from './HarvestModal.js';
 
 export function renderBedEditor(bed) {
   const plantings = store.getPlantings(bed.id);
@@ -120,13 +121,19 @@ export function renderBedEditor(bed) {
               <div class="empty-text" style="font-size: var(--font-size-sm)">Noch keine Pflanzungen</div>
             </div>`
           : `<div class="planting-list">
-              ${plantings.map(p => `
+              ${plantings.map(p => {
+                const harvestCount = store.getHarvests(p.id).length;
+                return `
                 <div class="planting-item">
                   <span class="planting-emoji">${p.emoji}</span>
                   <div class="planting-info">
                     <div class="planting-name">${p.name}</div>
-                    <div class="planting-date">${formatDate(p.datePlanted)}</div>
+                    <div class="planting-date">${formatDate(p.datePlanted)}${harvestCount > 0 ? ` · 🧺 ${harvestCount}×` : ''}</div>
                   </div>
+                  <button class="btn btn-sm planting-harvest-btn" data-planting-id="${p.id}" data-bed-id="${bed.id}"
+                    title="Ernte erfassen" style="padding: 2px 6px; font-size: 11px; min-width: 0;">
+                    🧺
+                  </button>
                   <button class="btn btn-sm planting-status-btn" data-planting-id="${p.id}"
                     title="Status ändern">
                     <span class="badge badge-${p.status}">${statusEmojis[p.status]} ${statusLabels[p.status]}</span>
@@ -135,7 +142,8 @@ export function renderBedEditor(bed) {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>`
         }
       </div>
@@ -290,6 +298,16 @@ export function bindBedEditorEvents(bedId, handlers) {
   document.querySelectorAll('.planting-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       store.deletePlanting(btn.dataset.plantingId);
+    });
+  });
+
+  // Harvest planting
+  document.querySelectorAll('.planting-harvest-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const planting = store.getPlantings().find(p => p.id === btn.dataset.plantingId);
+      if (planting) {
+        showHarvestModal(planting, btn.dataset.bedId);
+      }
     });
   });
 }

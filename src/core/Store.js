@@ -32,6 +32,7 @@ function makeDefaultGarden(id, name = 'Mein Garten') {
     photos: [],
     expenses: [],
     tasks: [],
+    harvests: [],
     levels: JSON.parse(JSON.stringify(DEFAULT_LEVELS)),
     createdAt: new Date().toISOString(),
   };
@@ -123,6 +124,7 @@ class Store {
       (g.photos    || []).forEach(x => scan(x.id));
       (g.expenses  || []).forEach(x => scan(x.id));
       (g.tasks     || []).forEach(x => scan(x.id));
+      (g.harvests  || []).forEach(x => scan(x.id));
     }
     return max + 1;
   }
@@ -151,6 +153,7 @@ class Store {
           photos:    parsed.photos    || [],
           expenses:  parsed.expenses  || [],
           tasks:     parsed.tasks     || [],
+          harvests:  parsed.harvests  || [],
           levels:    parsed.levels    || JSON.parse(JSON.stringify(DEFAULT_LEVELS)),
           createdAt: new Date().toISOString(),
         }],
@@ -529,6 +532,40 @@ class Store {
     active.tasks = (active.tasks || []).filter(t => t.id !== id);
     this.save();
     bus.emit('tasks:changed', active.tasks);
+  }
+
+  // ── Harvests ──────────────────────────────────────────────────────
+
+  getHarvests(plantingId) {
+    const all = this._active().harvests || [];
+    return plantingId ? all.filter(h => h.plantingId === plantingId) : all;
+  }
+
+  addHarvest(harvest) {
+    if (!this._active().harvests) this._active().harvests = [];
+    const newHarvest = {
+      id:         this.generateId('harvest'),
+      plantingId: harvest.plantingId,
+      bedId:      harvest.bedId || null,
+      plantName:  harvest.plantName || '',
+      plantEmoji: harvest.plantEmoji || '🌱',
+      date:       harvest.date || new Date().toISOString().split('T')[0],
+      amount:     harvest.amount || 0,
+      unit:       harvest.unit || 'kg',
+      notes:      harvest.notes || '',
+      createdAt:  new Date().toISOString(),
+    };
+    this._active().harvests.push(newHarvest);
+    this.save();
+    bus.emit('harvests:changed', this._active().harvests);
+    return newHarvest;
+  }
+
+  deleteHarvest(id) {
+    const active = this._active();
+    active.harvests = (active.harvests || []).filter(h => h.id !== id);
+    this.save();
+    bus.emit('harvests:changed', active.harvests);
   }
 
   // ── Settings (global) ──────────────────────────────────────────────

@@ -1037,3 +1037,204 @@
   font-weight: 500;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   HARVEST MODAL & PROTOCOL
+═══════════════════════════════════════════════════════════ */
+
+.harvest-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.harvest-history-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  border: var(--glass-border);
+  background: var(--color-bg);
+  transition: background var(--transition-fast);
+  animation: plantGrow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.harvest-history-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.harvest-history-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.harvest-history-amount {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+  white-space: nowrap;
+}
+
+.harvest-history-date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.harvest-history-notes {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.harvest-total {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+}
+
+.harvest-total-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--color-success);
+}
+
+/* Dashboard harvest widget */
+.harvest-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-sm);
+}
+
+.harvest-dashboard-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  border: var(--glass-border);
+  background: var(--color-surface);
+  transition: all var(--transition-fast);
+}
+
+.harvest-dashboard-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--color-shadow);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CROP ROTATION ASSISTANT
+═══════════════════════════════════════════════════════════ */
+
+.crop-rotation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-md);
+}
+
+.crop-rotation-card {
+  background: var(--color-surface);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  transition: all var(--transition-fast);
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+.crop-rotation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--color-shadow);
+  border-color: var(--color-border-strong);
+}
+
+.crop-rotation-card-header {
+  margin-bottom: var(--space-sm);
+}
+
+.crop-rotation-bed-name {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-xs);
+}
+
+.crop-rotation-flow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.crop-rotation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.crop-rotation-arrow {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  font-weight: 300;
+}
+
+.crop-rotation-current {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  padding: var(--space-xs) 0;
+  margin-bottom: var(--space-xs);
+}
+
+.crop-rotation-plant {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.crop-rotation-suggestions {
+  border-top: var(--glass-border);
+  padding-top: var(--space-sm);
+}
+
+.crop-rotation-suggestion-list {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  margin-top: var(--space-xs);
+}
+
+.crop-rotation-suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  cursor: default;
+  transition: all var(--transition-fast);
+}
+
+.crop-rotation-suggestion:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px var(--color-shadow);
+}
+

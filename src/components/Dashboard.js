@@ -4,6 +4,7 @@
 import { store } from '../core/Store.js';
 import { statusLabels, statusEmojis, formatDate } from '../utils/helpers.js';
 import { getSowingPlants, getHarvestPlants, monthNames } from '../data/plants.js';
+import { renderCropRotationWidget } from './CropRotation.js';
 
 // ── Wetter-Hilfsfunktionen ─────────────────────────────────────────
 
@@ -256,6 +257,63 @@ export function renderDashboard() {
         `).join('') : '<span style="color: var(--color-text-muted); font-size: var(--font-size-sm);">Keine Erntevorschläge für diesen Monat</span>'}
       </div>
     </div>
+
+    <!-- Ernte-Protokoll -->
+    ${(() => {
+      const harvests = store.getHarvests();
+      if (harvests.length === 0) return '';
+
+      // Aggregation by plant
+      const byPlant = {};
+      harvests.forEach(h => {
+        const key = `${h.plantEmoji} ${h.plantName}`;
+        if (!byPlant[key]) byPlant[key] = { emoji: h.plantEmoji, name: h.plantName, total: {}, count: 0 };
+        if (!byPlant[key].total[h.unit]) byPlant[key].total[h.unit] = 0;
+        byPlant[key].total[h.unit] += h.amount;
+        byPlant[key].count++;
+      });
+
+      // Grand totals by unit
+      const grandTotal = {};
+      harvests.forEach(h => {
+        if (!grandTotal[h.unit]) grandTotal[h.unit] = 0;
+        grandTotal[h.unit] += h.amount;
+      });
+
+      const totalStr = Object.entries(grandTotal)
+        .map(([unit, total]) => `${total % 1 === 0 ? total : total.toFixed(1)} ${unit}`)
+        .join(', ');
+
+      return `
+        <div class="dashboard-section animate-in">
+          <h2>🧺 Ernte-Protokoll</h2>
+          <div class="stat-card" style="margin-bottom: 16px; display: flex; align-items: center; padding: 12px;">
+            <div class="stat-icon" style="background: rgba(74, 222, 128, 0.1); color: #4ade80; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px;">🧺</div>
+            <div>
+              <div class="stat-value" style="font-size: 20px;">${totalStr}</div>
+              <div class="stat-label">${harvests.length} Ernten insgesamt</div>
+            </div>
+          </div>
+          <div class="harvest-dashboard-grid">
+            ${Object.values(byPlant).sort((a, b) => b.count - a.count).slice(0, 8).map(p => {
+              const amounts = Object.entries(p.total).map(([u, t]) => `${t % 1 === 0 ? t : t.toFixed(1)} ${u}`).join(', ');
+              return `
+                <div class="harvest-dashboard-item">
+                  <span style="font-size: 20px;">${p.emoji}</span>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: var(--font-size-sm);">${p.name}</div>
+                    <div style="font-size: var(--font-size-xs); color: var(--color-text-muted);">${amounts} · ${p.count}× geerntet</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    })()}
+
+    <!-- Fruchtfolge-Assistent -->
+    ${renderCropRotationWidget()}
 
     <!-- Recent plantings -->
     ${plantings.length > 0 ? `
