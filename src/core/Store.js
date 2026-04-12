@@ -397,16 +397,20 @@ class Store {
 
   addPlanting(planting) {
     const newPlanting = {
-      id:          this.generateId('planting'),
-      bedId:       planting.bedId,
-      name:        planting.name,
-      emoji:       planting.emoji || '🌱',
-      category:    planting.category || '',
-      datePlanted: planting.datePlanted || null,
-      dateHarvest: planting.dateHarvest || null,
-      status:      planting.status || 'planned',
-      notes:       planting.notes || '',
-      createdAt:   new Date().toISOString(),
+      id:                  this.generateId('planting'),
+      bedId:               planting.bedId,
+      name:                planting.name,
+      emoji:               planting.emoji || '🌱',
+      category:            planting.category || '',
+      datePlanted:         planting.datePlanted || null,
+      dateHarvest:         planting.dateHarvest || null,
+      dateHarvestExpected: planting.dateHarvestExpected || null,
+      status:              planting.status || 'planned',
+      quantity:            planting.quantity || null,
+      variety:             planting.variety || '',
+      spacing:             planting.spacing || null,
+      notes:               planting.notes || '',
+      createdAt:           new Date().toISOString(),
     };
     this._active().plantings.push(newPlanting);
     this.save();

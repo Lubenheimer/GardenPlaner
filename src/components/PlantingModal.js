@@ -1,5 +1,6 @@
 /**
  * PlantingModal — Modal dialog for adding a planting to a bed
+ * Extended: quantity, variety, spacing, auto-calculated harvest date
  */
 import { store } from '../core/Store.js';
 import { searchPlants, getPlant } from '../data/plants.js';
@@ -22,22 +23,51 @@ export function showPlantingModal(bedId) {
           <input type="text" class="form-input" id="plant-name-input" placeholder="Name eingeben oder suchen..." autocomplete="off">
           <div id="autocomplete-results" class="autocomplete-list" style="display:none"></div>
         </div>
-        <div id="plant-warnings" style="margin-top: 12px;"></div>
+        <div id="plant-info-badge" style="margin-top: 8px;"></div>
+        <div id="plant-warnings" style="margin-top: 8px;"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Status</label>
-        <select class="form-select" id="plant-status-select">
-          <option value="planned">📋 Geplant</option>
-          <option value="planted">🌱 Gesetzt</option>
-          <option value="growing">🌿 Wachsend</option>
-          <option value="harvest">🧺 Ernte</option>
-        </select>
+
+      <!-- Erweiterte Felder -->
+      <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+        <div class="form-group" style="margin: 0; flex: 1; min-width: 100px;">
+          <label class="form-label">Anzahl (Stück)</label>
+          <input type="number" class="form-input" id="plant-quantity-input" placeholder="z.B. 6" min="1" step="1">
+        </div>
+        <div class="form-group" style="margin: 0; flex: 2; min-width: 140px;">
+          <label class="form-label">Sorte / Varietät</label>
+          <input type="text" class="form-input" id="plant-variety-input" placeholder="z.B. San Marzano, Cherry…">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Datum gesetzt</label>
-        <input type="date" class="form-input" id="plant-date-input" value="${new Date().toISOString().split('T')[0]}">
+
+      <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-sm);">
+        <div class="form-group" style="margin: 0; flex: 1; min-width: 100px;">
+          <label class="form-label">Pflanzabstand (cm)</label>
+          <input type="number" class="form-input" id="plant-spacing-input" placeholder="auto" min="1" step="1">
+        </div>
+        <div class="form-group" style="margin: 0; flex: 1; min-width: 100px;">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="plant-status-select">
+            <option value="planned">📋 Geplant</option>
+            <option value="planted">🌱 Gesetzt</option>
+            <option value="growing">🌿 Wachsend</option>
+            <option value="harvest">🧺 Ernte</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group">
+
+      <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-sm);">
+        <div class="form-group" style="margin: 0; flex: 1; min-width: 140px;">
+          <label class="form-label">Datum gesetzt / geplant</label>
+          <input type="date" class="form-input" id="plant-date-input" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+        <div class="form-group" style="margin: 0; flex: 1; min-width: 140px;">
+          <label class="form-label">Erwartete Ernte</label>
+          <input type="date" class="form-input" id="plant-harvest-date-input" placeholder="auto-berechnet">
+          <div id="harvest-date-hint" style="font-size: 11px; color: var(--color-text-muted); margin-top: 2px;"></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: var(--space-sm);">
         <label class="form-label">Notizen</label>
         <textarea class="form-input" id="plant-notes-input" placeholder="Optionale Notizen..." rows="2"></textarea>
       </div>
@@ -56,6 +86,81 @@ export function showPlantingModal(bedId) {
   // Autocomplete
   const input = document.getElementById('plant-name-input');
   const results = document.getElementById('autocomplete-results');
+  const spacingInput = document.getElementById('plant-spacing-input');
+  const dateInput = document.getElementById('plant-date-input');
+  const harvestDateInput = document.getElementById('plant-harvest-date-input');
+  const harvestDateHint = document.getElementById('harvest-date-hint');
+  const infoBadge = document.getElementById('plant-info-badge');
+
+  /**
+   * When a plant is selected from catalog, auto-fill spacing and harvest date
+   */
+  const autoFillFromCatalog = (plant) => {
+    if (!plant) {
+      infoBadge.innerHTML = '';
+      return;
+    }
+
+    // Auto-fill spacing if empty
+    if (plant.spacing && !spacingInput.value) {
+      spacingInput.value = plant.spacing;
+      spacingInput.placeholder = `${plant.spacing} cm`;
+    }
+
+    // Auto-calculate harvest date
+    autoCalculateHarvestDate(plant);
+
+    // Info badge with plant meta
+    const infoParts = [];
+    if (plant.nutrition) {
+      const nutritionLabels = { stark: '🔴 Starkzehrer', mittel: '🟡 Mittelzehrer', schwach: '🟢 Schwachzehrer' };
+      infoParts.push(nutritionLabels[plant.nutrition] || plant.nutrition);
+    }
+    if (plant.spacing) infoParts.push(`↔️ ${plant.spacing} cm Abstand`);
+    if (plant.daysToHarvest) infoParts.push(`⏱️ ${plant.daysToHarvest} Tage bis Ernte`);
+    if (plant.waterDays) infoParts.push(`💧 alle ${plant.waterDays} Tage gießen`);
+    if (plant.fertilizeWeeks) infoParts.push(`🧪 alle ${plant.fertilizeWeeks} Wochen düngen`);
+
+    if (infoParts.length > 0) {
+      infoBadge.innerHTML = `<div style="display: flex; flex-wrap: wrap; gap: 4px;">
+        ${infoParts.map(p => `<span style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--color-primary-soft); color: var(--color-primary);">${p}</span>`).join('')}
+      </div>`;
+    }
+  };
+
+  const autoCalculateHarvestDate = (plant) => {
+    if (!plant || !plant.daysToHarvest) {
+      harvestDateHint.textContent = '';
+      return;
+    }
+
+    const datePlanted = dateInput.value;
+    if (!datePlanted) return;
+
+    const d = new Date(datePlanted);
+    d.setDate(d.getDate() + plant.daysToHarvest);
+    const expected = d.toISOString().split('T')[0];
+
+    // Only auto-set if user hasn't manually entered a date
+    if (!harvestDateInput.value) {
+      harvestDateInput.value = expected;
+    }
+    harvestDateHint.textContent = `≈ ${plant.daysToHarvest} Tage nach Pflanzung`;
+  };
+
+  // When date changes, recalculate harvest date
+  dateInput.addEventListener('change', () => {
+    const plant = selectedPlant ? getPlant(selectedPlant.name) : getPlant(input.value.trim());
+    if (plant && plant.daysToHarvest && !harvestDateInput.dataset.manual) {
+      harvestDateInput.value = '';
+      autoCalculateHarvestDate(plant);
+    }
+  });
+
+  // Mark harvest date as manually set when user changes it
+  harvestDateInput.addEventListener('change', () => {
+    harvestDateInput.dataset.manual = 'true';
+  });
 
   const evaluateWarnings = (plantName) => {
     const warningsDiv = document.getElementById('plant-warnings');
@@ -146,7 +251,7 @@ export function showPlantingModal(bedId) {
           <span class="plant-emoji">${p.emoji}</span>
           <div class="plant-info">
             <div class="plant-name">${p.name}</div>
-            <div class="plant-category">${p.category}</div>
+            <div class="plant-category">${p.category}${p.spacing ? ` · ${p.spacing} cm` : ''}${p.daysToHarvest ? ` · ${p.daysToHarvest}d` : ''}</div>
           </div>
         </div>
       `).join('');
@@ -159,12 +264,20 @@ export function showPlantingModal(bedId) {
             emoji: item.dataset.emoji,
             category: item.dataset.category,
           };
+          const plant = getPlant(item.dataset.name);
+          autoFillFromCatalog(plant);
           evaluateWarnings(item.dataset.name);
           results.style.display = 'none';
         });
       });
     } else {
       results.style.display = 'none';
+    }
+
+    // If typed text matches a catalog plant exactly, auto-fill
+    const exactMatch = getPlant(query);
+    if (exactMatch) {
+      autoFillFromCatalog(exactMatch);
     }
   });
 
@@ -193,6 +306,8 @@ export function showPlantingModal(bedId) {
     }
 
     const plant = selectedPlant || getPlant(name) || { name, emoji: '🌱', category: '' };
+    const quantityVal = parseInt(document.getElementById('plant-quantity-input').value);
+    const spacingVal = parseInt(spacingInput.value);
 
     store.addPlanting({
       bedId,
@@ -200,7 +315,11 @@ export function showPlantingModal(bedId) {
       emoji: plant.emoji,
       category: plant.category,
       status: document.getElementById('plant-status-select').value,
-      datePlanted: document.getElementById('plant-date-input').value || null,
+      datePlanted: dateInput.value || null,
+      dateHarvestExpected: harvestDateInput.value || null,
+      quantity: isNaN(quantityVal) ? null : quantityVal,
+      variety: document.getElementById('plant-variety-input').value.trim(),
+      spacing: isNaN(spacingVal) ? null : spacingVal,
       notes: document.getElementById('plant-notes-input').value,
     });
 

@@ -117,12 +117,16 @@ Features die die App im Alltag über die Saison relevant halten:
    Alle Pflanzungen mit Status `planned` sollen automatisch Einkaufseinträge erzeugen. Aktuell nur als passiver Hinweistext im Dashboard — kein Check-off, kein Export.
    Umsetzung: Neue Komponente `ShoppingList.js`, Integration im Dashboard und Tasks-Tab, CSV-Export.
 
-4. **Erweiterte Pflanzungserfassung**
-   Beim Hinzufügen einer Pflanzung fehlen: Anzahl (Stück), Sorte/Varietät (Freitext), Pflanzabstand (cm, aus DB vorbelegt), geplantes Erntedatum (auto-berechnet aus `datePlanted + daysToHarvest`).
-   Ergänzung `plants.js`: Felder `spacing`, `daysToHarvest`, `sunRequirement`.
+4. ✅ **Erweiterte Pflanzungserfassung** — ERLEDIGT
+   PlantingModal erweitert um: Anzahl (Stück), Sorte/Varietät (Freitext), Pflanzabstand (cm, aus DB vorbelegt), geplantes Erntedatum (auto-berechnet aus `datePlanted + daysToHarvest`).
+   `plants.js` erweitert um: `spacing`, `daysToHarvest`, `waterDays`, `fertilizeWeeks` für alle 68 Pflanzen.
+   Store: Planting-Objekt um `quantity`, `variety`, `spacing`, `dateHarvestExpected` erweitert.
+   BedEditor zeigt Sorte, Anzahl, Pflanzabstand und erwartetes Erntedatum in der Pflanzungsliste an.
 
-5. **Gieß- & Dünge-Kalender**
-   Erinnerungen pro Beet oder Pflanze (z. B. „Tomate alle 2–3 Tage gießen"). Integration in den bestehenden Aufgaben-Tab.
+5. ✅ **Gieß- & Dünge-Kalender** — ERLEDIGT
+   Tasks-Tab zeigt automatische Gieß- und Dünge-Erinnerungen basierend auf aktiven Pflanzungen und Katalogdaten (`waterDays`, `fertilizeWeeks`).
+   Aufgeteilt in „Heute fällig" (optisch hervorgehoben) und „Demnächst" (nächste 3 Tage).
+   Zusätzliche Pflege-Intervall-Übersicht als Karten-Grid pro Beet mit kompakten Badges.
 
 6. **Saison-Archiv**
    Aktuellen Gartenstatus eines Jahres „einfrieren" (Read-only-Kopie) um Vorjahres-Bepflanzung als Referenz zu behalten.

@@ -123,12 +123,16 @@ export function renderBedEditor(bed) {
           : `<div class="planting-list">
               ${plantings.map(p => {
                 const harvestCount = store.getHarvests(p.id).length;
+                const meta = [];
+                if (p.variety) meta.push(p.variety);
+                if (p.quantity) meta.push(`${p.quantity} Stk`);
+                if (p.spacing) meta.push(`↔${p.spacing}cm`);
                 return `
                 <div class="planting-item">
                   <span class="planting-emoji">${p.emoji}</span>
                   <div class="planting-info">
-                    <div class="planting-name">${p.name}</div>
-                    <div class="planting-date">${formatDate(p.datePlanted)}${harvestCount > 0 ? ` · 🧺 ${harvestCount}×` : ''}</div>
+                    <div class="planting-name">${p.name}${meta.length > 0 ? ` <span style="font-weight:400;font-size:11px;color:var(--color-text-muted)">${meta.join(' · ')}</span>` : ''}</div>
+                    <div class="planting-date">${formatDate(p.datePlanted)}${p.dateHarvestExpected ? ` → ${formatDate(p.dateHarvestExpected)}` : ''}${harvestCount > 0 ? ` · 🧺 ${harvestCount}×` : ''}</div>
                   </div>
                   <button class="btn btn-sm planting-harvest-btn" data-planting-id="${p.id}" data-bed-id="${bed.id}"
                     title="Ernte erfassen" style="padding: 2px 6px; font-size: 11px; min-width: 0;">

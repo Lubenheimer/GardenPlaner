@@ -1,11 +1,168 @@
 import { store } from '../core/Store.js';
 import { formatDate } from '../utils/helpers.js';
+import { getPlant } from '../data/plants.js';
+
+/**
+ * Generate watering and fertilizing reminders based on active plantings
+ */
+function generateCareReminders() {
+  const plantings = store.getPlantings();
+  const beds = store.getBeds();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const reminders = [];
+
+  // Group plantings by bed
+  const bedMap = {};
+  beds.forEach(b => { bedMap[b.id] = b; });
+
+  const activePlantings = plantings.filter(p => p.status === 'planted' || p.status === 'growing');
+
+  activePlantings.forEach(p => {
+    const plant = getPlant(p.name);
+    if (!plant) return;
+    const bed = bedMap[p.bedId];
+    const bedName = bed ? bed.name : 'Unbekanntes Beet';
+
+    // Watering reminder
+    if (plant.waterDays) {
+      const daysSincePlanted = p.datePlanted
+        ? Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24))
+        : 0;
+      const isWateringDay = daysSincePlanted % plant.waterDays === 0;
+      const nextWateringIn = plant.waterDays - (daysSincePlanted % plant.waterDays);
+
+      reminders.push({
+        type: 'water',
+        emoji: '💧',
+        plant: p,
+        plantData: plant,
+        bedName,
+        interval: plant.waterDays,
+        isToday: isWateringDay,
+        nextIn: nextWateringIn === plant.waterDays ? 0 : nextWateringIn,
+        priority: isWateringDay ? 0 : nextWateringIn,
+      });
+    }
+
+    // Fertilizing reminder
+    if (plant.fertilizeWeeks) {
+      const daysSincePlanted = p.datePlanted
+        ? Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24))
+        : 0;
+      const intervalDays = plant.fertilizeWeeks * 7;
+      const isFertilizeDay = intervalDays > 0 && daysSincePlanted % intervalDays === 0 && daysSincePlanted > 0;
+      const nextFertilizeIn = intervalDays - (daysSincePlanted % intervalDays);
+
+      reminders.push({
+        type: 'fertilize',
+        emoji: '🧪',
+        plant: p,
+        plantData: plant,
+        bedName,
+        interval: plant.fertilizeWeeks,
+        intervalUnit: 'Wochen',
+        isToday: isFertilizeDay,
+        nextIn: nextFertilizeIn === intervalDays ? 0 : nextFertilizeIn,
+        priority: isFertilizeDay ? 0 : nextFertilizeIn,
+      });
+    }
+  });
+
+  return reminders;
+}
 
 export function renderTasks() {
   const container = document.getElementById('tasks-content');
   const tasks = store.getTasks();
+  const careReminders = generateCareReminders();
+
+  // Split reminders: today vs. upcoming
+  const todayReminders = careReminders.filter(r => r.isToday || r.nextIn <= 1);
+  const upcomingReminders = careReminders
+    .filter(r => !r.isToday && r.nextIn > 1 && r.nextIn <= 3)
+    .sort((a, b) => a.nextIn - b.nextIn);
+
+  // Deduplicate: one reminder per bed+type for today
+  const deduped = (list) => {
+    const seen = new Set();
+    return list.filter(r => {
+      const key = `${r.type}-${r.plant.bedId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const todayDeduped = deduped(todayReminders);
+  const upcomingDeduped = deduped(upcomingReminders);
 
   container.innerHTML = `
+    <!-- Gieß- & Dünge-Kalender -->
+    ${(todayDeduped.length > 0 || upcomingDeduped.length > 0) ? `
+      <div class="dashboard-section animate-in" style="margin-top: 24px; max-width: 800px;">
+        <h2>💧 Gieß- & Dünge-Kalender</h2>
+        <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-md);">
+          Automatische Erinnerungen basierend auf deinen aktiven Pflanzungen und den Pflegebedürfnissen aus dem Pflanzenkatalog.
+        </p>
+
+        ${todayDeduped.length > 0 ? `
+          <div style="margin-bottom: var(--space-md);">
+            <div style="font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; color: var(--color-primary); margin-bottom: var(--space-sm); letter-spacing: 0.05em;">
+              Heute fällig
+            </div>
+            <div class="care-reminder-list">
+              ${todayDeduped.map(r => `
+                <div class="care-reminder-item care-reminder-today">
+                  <span class="care-reminder-emoji">${r.emoji}</span>
+                  <div class="care-reminder-info">
+                    <div class="care-reminder-title">
+                      ${r.type === 'water' ? 'Gießen' : 'Düngen'}: ${r.plant.emoji} ${r.plant.name}
+                    </div>
+                    <div class="care-reminder-meta">
+                      ${r.bedName} · alle ${r.type === 'water' ? `${r.interval} Tage` : `${r.interval} Wochen`}
+                    </div>
+                  </div>
+                  <span class="care-reminder-badge care-reminder-badge-today">Heute</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${upcomingDeduped.length > 0 ? `
+          <div>
+            <div style="font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: var(--space-sm); letter-spacing: 0.05em;">
+              Demnächst
+            </div>
+            <div class="care-reminder-list">
+              ${upcomingDeduped.map(r => `
+                <div class="care-reminder-item">
+                  <span class="care-reminder-emoji">${r.emoji}</span>
+                  <div class="care-reminder-info">
+                    <div class="care-reminder-title">
+                      ${r.type === 'water' ? 'Gießen' : 'Düngen'}: ${r.plant.emoji} ${r.plant.name}
+                    </div>
+                    <div class="care-reminder-meta">
+                      ${r.bedName} · alle ${r.type === 'water' ? `${r.interval} Tage` : `${r.interval} Wochen`}
+                    </div>
+                  </div>
+                  <span class="care-reminder-badge">in ${r.nextIn} ${r.nextIn === 1 ? 'Tag' : 'Tagen'}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${todayDeduped.length === 0 && upcomingDeduped.length === 0 ? `
+          <div class="empty-state" style="padding: var(--space-md);">
+            <div class="empty-text" style="font-size: var(--font-size-sm);">Keine anstehenden Pflege-Erinnerungen.</div>
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
+
+    <!-- Aufgaben -->
     <div class="dashboard-section animate-in" style="margin-top: 24px; max-width: 800px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <h2>📝 Meine Aufgaben</h2>
@@ -39,6 +196,50 @@ export function renderTasks() {
         }
       </div>
     </div>
+
+    <!-- Pflege-Übersicht (alle Intervalle) -->
+    ${careReminders.length > 0 ? `
+      <div class="dashboard-section animate-in" style="margin-top: 24px; max-width: 800px;">
+        <h2>📋 Pflege-Intervalle</h2>
+        <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-md);">
+          Übersicht aller Gieß- und Düngeintervalle deiner aktiven Pflanzungen.
+        </p>
+        <div class="care-schedule-grid">
+          ${(() => {
+            // Group by bed
+            const byBed = {};
+            const activePlantings = store.getPlantings().filter(p => p.status === 'planted' || p.status === 'growing');
+            activePlantings.forEach(p => {
+              if (!byBed[p.bedId]) byBed[p.bedId] = { bed: store.getBed(p.bedId), plantings: [] };
+              byBed[p.bedId].plantings.push(p);
+            });
+            return Object.values(byBed).map(({ bed, plantings }) => {
+              if (!bed) return '';
+              return `
+                <div class="care-schedule-card">
+                  <div class="care-schedule-bed-name">${bed.name}</div>
+                  <div class="care-schedule-plants">
+                    ${plantings.map(p => {
+                      const plant = getPlant(p.name);
+                      if (!plant) return '';
+                      return `
+                        <div class="care-schedule-plant">
+                          <span>${p.emoji} ${p.name}</span>
+                          <div class="care-schedule-badges">
+                            ${plant.waterDays ? `<span class="care-badge care-badge-water">💧 ${plant.waterDays}d</span>` : ''}
+                            ${plant.fertilizeWeeks ? `<span class="care-badge care-badge-fertilize">🧪 ${plant.fertilizeWeeks}w</span>` : ''}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          })()}
+        </div>
+      </div>
+    ` : ''}
   `;
 
   // Bind Events

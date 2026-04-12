@@ -1238,3 +1238,141 @@
   box-shadow: 0 2px 8px var(--color-shadow);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   CARE CALENDAR (Gieß- & Dünge-Kalender)
+═══════════════════════════════════════════════════════════ */
+
+.care-reminder-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.care-reminder-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  border: var(--glass-border);
+  background: var(--color-surface);
+  transition: all var(--transition-fast);
+  animation: plantGrow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.care-reminder-item:hover {
+  background: var(--color-surface-hover);
+  transform: translateX(2px);
+}
+
+.care-reminder-today {
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.care-reminder-emoji {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.care-reminder-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.care-reminder-title {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.care-reminder-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.care-reminder-badge {
+  display: inline-flex;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: var(--glass-border);
+  white-space: nowrap;
+}
+
+.care-reminder-badge-today {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  font-weight: 600;
+}
+
+/* Care schedule grid */
+.care-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-md);
+}
+
+.care-schedule-card {
+  background: var(--color-surface);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  transition: all var(--transition-fast);
+}
+
+.care-schedule-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--color-shadow);
+}
+
+.care-schedule-bed-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-sm);
+  padding-bottom: var(--space-xs);
+  border-bottom: var(--glass-border);
+}
+
+.care-schedule-plants {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.care-schedule-plant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--font-size-sm);
+}
+
+.care-schedule-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.care-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.care-badge-water {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.care-badge-fertilize {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+}
