@@ -314,7 +314,7 @@ export class CanvasRenderer {
       ctx.shadowBlur  = 24;
       ctx.shadowOffsetX = 8;
       ctx.shadowOffsetY = 14;
-    } else if ((level && level.zIndex > 0) || height > 0) {
+    } else if (bed.castShadow !== false && ((level && level.zIndex > 0) || height > 0)) {
       const s    = store.getSettings();
       const t    = s.simulationTime   !== undefined ? s.simulationTime   : 12;
       const m    = s.simulationMonth  !== undefined ? s.simulationMonth  : 6;
@@ -400,7 +400,13 @@ export class CanvasRenderer {
       }
     }
 
-    // ── Label ──────────────────────────────────────────────────────
+    // ── Restore rotation BEFORE drawing label ──────────────────────
+    // This ensures the label is always drawn horizontally, regardless
+    // of how much the bed object has been rotated.
+    ctx.restore();
+
+    // ── Label (always horizontal & readable) ───────────────────────
+    ctx.save();
     ctx.shadowColor   = 'transparent';
     ctx.shadowBlur    = 0;
     ctx.shadowOffsetX = 0;
@@ -619,17 +625,22 @@ export class CanvasRenderer {
   }
 
   _getThemeColor(name) {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const colors = {
-      'canvas-bg':     isDark ? '#1e160e' : '#c8b89a',
-      'grid':          isDark ? 'rgba(212,149,106,0.07)' : 'rgba(90,66,42,0.12)',
-      'border-strong': isDark ? 'rgba(212,149,106,0.22)' : 'rgba(124,92,62,0.26)',
-      'text':          isDark ? '#f0e8dd' : '#2c1f14',
-      'text-muted':    isDark ? '#8a7060' : '#9a7b6e',
-      'primary':       isDark ? '#d4956a' : '#7c5c3e',
-      'surface':       isDark ? '#231a14' : '#faf7f2',
+    const style = getComputedStyle(document.documentElement);
+    const map = {
+      'canvas-bg':     '--color-canvas-bg',
+      'grid':          '--color-canvas-grid',
+      'border-strong': '--color-border-strong',
+      'text':          '--color-text',
+      'text-muted':    '--color-text-muted',
+      'primary':       '--color-primary',
+      'surface':       '--color-surface',
     };
-    return colors[name] || '#000';
+    const varName = map[name];
+    if (varName) {
+      const val = style.getPropertyValue(varName).trim();
+      if (val) return val;
+    }
+    return '#888';
   }
 
   // ── Texture system ──────────────────────────────────────────────────

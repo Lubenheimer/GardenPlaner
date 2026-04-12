@@ -34,6 +34,8 @@ function weatherCodeToLabel(code) {
   return 'Gewitter';
 }
 
+import { savePrecipAnalysis } from '../utils/precipAnalysis.js';
+
 async function fetchWeather(lat, lon, city) {
   // Cache prüfen
   try {
@@ -45,7 +47,8 @@ async function fetchWeather(lat, lon, city) {
 
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
     + `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode`
-    + `&forecast_days=7&timezone=auto`;
+    + `&hourly=precipitation`
+    + `&past_days=1&forecast_days=7&timezone=auto`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error('Wetterdaten nicht verfügbar');
@@ -59,12 +62,16 @@ async function fetchWeather(lat, lon, city) {
     code:       json.daily.weathercode[i],
   }));
 
+  // Stündliche Niederschlagsdaten für Gieß-Kalender speichern
+  savePrecipAnalysis(json, city);
+
   try {
     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ city, ts: Date.now(), data }));
   } catch { /* ignore */ }
 
   return data;
 }
+
 
 function renderWeatherWidget(weatherData, city) {
   const today = new Date().toISOString().split('T')[0];

@@ -109,7 +109,21 @@ export function renderBedEditor(bed) {
         </div>
       </div>
 
+      <!-- Schattenwurf -->
+      <div class="panel-section">
+        <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; user-select: none;">
+          <div class="shadow-toggle-track ${bed.castShadow === false ? '' : 'shadow-toggle-on'}" id="cast-shadow-toggle">
+            <div class="shadow-toggle-thumb"></div>
+          </div>
+          <span style="font-size: var(--font-size-sm); font-weight: 500;">Schattenwurf</span>
+          <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">
+            ${bed.castShadow === false ? 'Deaktiviert' : 'Aktiv (basierend auf Höhe & Sonnenstand)'}
+          </span>
+        </label>
+      </div>
+
       <!-- Plantings -->
+
       ${currentType.hasPlantings ? `
       <div class="panel-section">
         <div class="panel-section-title" style="display:flex; align-items:center; justify-content:space-between;">
@@ -266,6 +280,21 @@ export function bindBedEditorEvents(bedId, handlers) {
 
   document.getElementById('bed-sunlight-select')?.addEventListener('change', (e) => {
     store.updateBed(bedId, { sunlight: e.target.value });
+    handlers.onUpdate?.();
+  });
+
+  // Schattenwurf toggle
+  const shadowToggle = document.getElementById('cast-shadow-toggle');
+  shadowToggle?.addEventListener('click', () => {
+    const current = store.getBed(bedId)?.castShadow;
+    // undefined / true => disable; false => enable
+    const newVal = current === false ? true : false;
+    store.updateBed(bedId, { castShadow: newVal });
+    shadowToggle.classList.toggle('shadow-toggle-on', newVal !== false);
+    shadowToggle.nextElementSibling.nextElementSibling.textContent =
+      newVal === false
+        ? 'Deaktiviert'
+        : 'Aktiv (basierend auf Höhe & Sonnenstand)';
     handlers.onUpdate?.();
   });
 

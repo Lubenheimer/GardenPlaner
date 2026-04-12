@@ -37,6 +37,7 @@ export class CanvasInteraction {
     this.canvas.addEventListener('mouseleave', () => this._onMouseLeave());
     this.canvas.addEventListener('wheel', (e) => this._onWheel(e), { passive: false });
     this.canvas.addEventListener('dblclick', (e) => this._onDblClick(e));
+    this.canvas.addEventListener('contextmenu', (e) => this._onContextMenu(e));
 
     // Touch support
     this.canvas.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: false });
@@ -366,6 +367,133 @@ export class CanvasInteraction {
     if (bed) {
       bus.emit('bed:edit', bed);
     }
+  }
+
+  _onContextMenu(e) {
+    e.preventDefault();
+    if (!this.enabled) return;
+
+    const pos = this._getMousePos(e);
+    const world = this.renderer.screenToWorld(pos.x, pos.y);
+    const bed = this.renderer.getBedAtPosition(world.x, world.y);
+
+    if (bed) {
+      // Select the bed so context actions apply to it
+      this.renderer.selectedBedId = bed.id;
+      this.renderer.render();
+      bus.emit('bed:selected', bed);
+      this._showContextMenu(e.clientX, e.clientY, bed);
+    } else {
+      this._hideContextMenu();
+    }
+  }
+
+  _showContextMenu(clientX, clientY, bed) {
+    this._hideContextMenu(); // remove any existing menu
+
+    const levels = store.getLevels();
+    const types  = store.getElementTypes();
+    const currentType = types.find(t => t.id === bed.kind) || types[0];
+    const hasPlantings = currentType?.hasPlantings;
+
+    const menu = document.createElement('div');
+    menu.id = 'canvas-context-menu';
+    menu.className = 'context-menu';
+
+    // Build level submenu items
+    const levelItems = levels.length > 1
+      ? levels.map(l => `
+          <div class="context-menu-item context-menu-sub${l.id === bed.levelId ? ' active' : ''}" data-action="level" data-level-id="${l.id}">
+            <span class="ctx-icon">⛰️</span> ${l.name}${l.id === bed.levelId ? ' ✓' : ''}
+          </div>`).join('')
+      : `<div class="context-menu-item disabled"><span class="ctx-icon">⛰️</span> Nur eine Ebene vorhanden</div>`;
+
+    menu.innerHTML = `
+      <div class="context-menu-header">${bed.name || 'Element'}</div>
+      ${hasPlantings ? `
+        <div class="context-menu-item" data-action="plant">
+          <span class="ctx-icon">🌱</span> Pflanzung hinzufügen
+        </div>
+      ` : ''}
+      <div class="context-menu-item" data-action="rename">
+        <span class="ctx-icon">✏️</span> Umbenennen
+      </div>
+      <div class="context-menu-item" data-action="duplicate">
+        <span class="ctx-icon">📋</span> Duplizieren
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-label">Ebene wechseln</div>
+      ${levelItems}
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item context-menu-danger" data-action="delete">
+        <span class="ctx-icon">🗑️</span> Löschen
+      </div>
+    `;
+
+    // Position: keep within viewport
+    document.body.appendChild(menu);
+    const menuW = menu.offsetWidth || 200;
+    const menuH = menu.offsetHeight || 250;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    menu.style.left = `${Math.min(clientX, vw - menuW - 8)}px`;
+    menu.style.top  = `${Math.min(clientY, vh - menuH - 8)}px`;
+
+    // Bind action clicks
+    menu.querySelectorAll('.context-menu-item[data-action]').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        this._hideContextMenu();
+
+        if (action === 'plant') {
+          bus.emit('bed:addPlanting', bed);
+        } else if (action === 'rename') {
+          const newName = prompt('Neuer Name:', bed.name);
+          if (newName && newName.trim()) {
+            store.updateBed(bed.id, { name: newName.trim() });
+            this.renderer.render();
+            bus.emit('bed:selected', store.getBed(bed.id));
+          }
+        } else if (action === 'duplicate') {
+          const offset = 20;
+          const newBed = store.addBed({
+            ...bed,
+            id: undefined,
+            x: bed.x + offset,
+            y: bed.y + offset,
+            name: bed.name + ' (Kopie)',
+          });
+          this.renderer.selectedBedId = newBed.id;
+          this.renderer.render();
+          bus.emit('bed:selected', newBed);
+        } else if (action === 'level') {
+          const levelId = item.dataset.levelId;
+          store.updateBed(bed.id, { levelId });
+          this.renderer.render();
+          bus.emit('bed:selected', store.getBed(bed.id));
+        } else if (action === 'delete') {
+          if (confirm(`"${bed.name}" wirklich löschen?`)) {
+            store.deleteBed(bed.id);
+            this.renderer.selectedBedId = null;
+            this.renderer.render();
+            bus.emit('bed:deselected');
+          }
+        }
+      });
+    });
+
+    // Close on outside click
+    const closeHandler = (ev) => {
+      if (!menu.contains(ev.target)) {
+        this._hideContextMenu();
+        document.removeEventListener('mousedown', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('mousedown', closeHandler), 10);
+  }
+
+  _hideContextMenu() {
+    document.getElementById('canvas-context-menu')?.remove();
   }
 
   // Basic touch support

@@ -1,18 +1,22 @@
 import { store } from '../core/Store.js';
 import { formatDate } from '../utils/helpers.js';
 import { getPlant } from '../data/plants.js';
+import {
+  getCachedPrecipAnalysis,
+  evaluatePrecip,
+} from '../utils/precipAnalysis.js';
 
 /**
- * Generate watering and fertilizing reminders based on active plantings
+ * Generate watering and fertilizing reminders based on active plantings.
+ * For watering reminders, integrates precipitation data to skip/downgrade
+ * when the weather has done the job already.
  */
-function generateCareReminders() {
+function generateCareReminders(precipAnalysis) {
   const plantings = store.getPlantings();
   const beds = store.getBeds();
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
   const reminders = [];
 
-  // Group plantings by bed
   const bedMap = {};
   beds.forEach(b => { bedMap[b.id] = b; });
 
@@ -24,28 +28,47 @@ function generateCareReminders() {
     const bed = bedMap[p.bedId];
     const bedName = bed ? bed.name : 'Unbekanntes Beet';
 
-    // Watering reminder
+    // ── Watering reminder ────────────────────────────────────────────
     if (plant.waterDays) {
       const daysSincePlanted = p.datePlanted
         ? Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24))
         : 0;
       const isWateringDay = daysSincePlanted % plant.waterDays === 0;
       const nextWateringIn = plant.waterDays - (daysSincePlanted % plant.waterDays);
+      const nextIn = nextWateringIn === plant.waterDays ? 0 : nextWateringIn;
+
+      // ── Precipitation check ──────────────────────────────────────
+      // For "today" reminders: use last 24h rain
+      // For "tomorrow" (nextIn === 1): use expected rain tonight + tomorrow
+      let precip = null;
+      if (precipAnalysis) {
+        if (isWateringDay || nextIn === 0) {
+          precip = precipAnalysis.last24h;
+        } else if (nextIn === 1) {
+          // Tonight + next day precip
+          precip = (precipAnalysis.tonight || 0) + (precipAnalysis.next24h || 0);
+        }
+      }
+
+      const precipInfo = evaluatePrecip(precip, plant.waterDays);
 
       reminders.push({
         type: 'water',
-        emoji: '💧',
+        emoji: precipInfo.skipWatering ? precipInfo.emoji : '💧',
         plant: p,
         plantData: plant,
         bedName,
         interval: plant.waterDays,
         isToday: isWateringDay,
-        nextIn: nextWateringIn === plant.waterDays ? 0 : nextWateringIn,
-        priority: isWateringDay ? 0 : nextWateringIn,
+        nextIn,
+        priority: isWateringDay ? 0 : nextIn,
+        precipInfo,
+        // Effective skip: only skip watering reminders, not fertilizer
+        skippedByRain: precipInfo.skipWatering && plant.waterDays < 14,
       });
     }
 
-    // Fertilizing reminder
+    // ── Fertilizing reminder ─────────────────────────────────────────
     if (plant.fertilizeWeeks) {
       const daysSincePlanted = p.datePlanted
         ? Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24))
@@ -65,6 +88,8 @@ function generateCareReminders() {
         isToday: isFertilizeDay,
         nextIn: nextFertilizeIn === intervalDays ? 0 : nextFertilizeIn,
         priority: isFertilizeDay ? 0 : nextFertilizeIn,
+        precipInfo: null,
+        skippedByRain: false,
       });
     }
   });
@@ -72,18 +97,66 @@ function generateCareReminders() {
   return reminders;
 }
 
+/**
+ * Render a single care reminder card (today or upcoming)
+ */
+function renderReminderCard(r, isToday) {
+  const { precipInfo, skippedByRain } = r;
+  const hasRainNote = r.type === 'water' && precipInfo && precipInfo.status !== 'unknown' && precipInfo.status !== 'none';
+
+  const cardClass = skippedByRain
+    ? 'care-reminder-item care-reminder-rained'
+    : isToday
+      ? 'care-reminder-item care-reminder-today'
+      : 'care-reminder-item';
+
+  let badge, rainNote = '';
+
+  if (skippedByRain) {
+    badge = `<span class="care-reminder-badge care-reminder-badge-rain">${precipInfo.emoji} Regen</span>`;
+  } else if (isToday) {
+    badge = `<span class="care-reminder-badge care-reminder-badge-today">Heute</span>`;
+  } else {
+    badge = `<span class="care-reminder-badge">in ${r.nextIn} ${r.nextIn === 1 ? 'Tag' : 'Tagen'}</span>`;
+  }
+
+  if (hasRainNote) {
+    const noteStyle = `color: ${precipInfo.color || 'var(--color-accent)'}; font-size: var(--font-size-xs); margin-top: 2px;`;
+    rainNote = `<div style="${noteStyle}">${precipInfo.emoji} ${precipInfo.label}${precipInfo.hint ? ` — ${precipInfo.hint}` : ''}</div>`;
+  }
+
+  return `
+    <div class="${cardClass}">
+      <span class="care-reminder-emoji">${r.emoji}</span>
+      <div class="care-reminder-info">
+        <div class="care-reminder-title ${skippedByRain ? 'care-skipped' : ''}">
+          ${r.type === 'water' ? 'Gießen' : 'Düngen'}: ${r.plant.emoji} ${r.plant.name}
+        </div>
+        <div class="care-reminder-meta">
+          ${r.bedName} · alle ${r.type === 'water' ? `${r.interval} Tage` : `${r.interval} Wochen`}
+        </div>
+        ${rainNote}
+      </div>
+      ${badge}
+    </div>
+  `;
+}
+
 export function renderTasks() {
   const container = document.getElementById('tasks-content');
   const tasks = store.getTasks();
-  const careReminders = generateCareReminders();
 
-  // Split reminders: today vs. upcoming
+  // Read precipitation analysis from cache (written by Dashboard.js on weather fetch)
+  const precipAnalysis = getCachedPrecipAnalysis();
+  const careReminders = generateCareReminders(precipAnalysis);
+
+  // Split reminders: today/overdue vs. upcoming
   const todayReminders = careReminders.filter(r => r.isToday || r.nextIn <= 1);
   const upcomingReminders = careReminders
     .filter(r => !r.isToday && r.nextIn > 1 && r.nextIn <= 3)
     .sort((a, b) => a.nextIn - b.nextIn);
 
-  // Deduplicate: one reminder per bed+type for today
+  // Deduplicate: one reminder per bed+type
   const deduped = (list) => {
     const seen = new Set();
     return list.filter(r => {
@@ -97,35 +170,57 @@ export function renderTasks() {
   const todayDeduped = deduped(todayReminders);
   const upcomingDeduped = deduped(upcomingReminders);
 
+  // Today's watering reminders that are skipped by rain
+  const skippedToday  = todayDeduped.filter(r => r.skippedByRain);
+  const activeToday   = todayDeduped.filter(r => !r.skippedByRain);
+  const heavyRain     = precipAnalysis && precipAnalysis.last24h >= 15;
+
+  // Build precipitation summary banner
+  const precipBanner = precipAnalysis && (precipAnalysis.last24h > 0 || precipAnalysis.next24h > 0) ? `
+    <div class="precip-summary-banner ${heavyRain ? 'precip-heavy' : precipAnalysis.last24h >= 5 ? 'precip-good' : 'precip-light'}">
+      <div class="precip-banner-icon">${heavyRain ? '🌊' : precipAnalysis.last24h >= 5 ? '🌧️' : '🌦️'}</div>
+      <div class="precip-banner-info">
+        <div class="precip-banner-title">Niederschlag (letzte 24h)</div>
+        <div class="precip-banner-detail">
+          ${precipAnalysis.last24h > 0 ? `<span>Letzte Nacht / Heute: <strong>${precipAnalysis.last24h.toFixed(1)} mm</strong></span>` : ''}
+          ${precipAnalysis.tonight > 0 ? `<span>Heute Nacht erwartet: <strong>${precipAnalysis.tonight.toFixed(1)} mm</strong></span>` : ''}
+          ${precipAnalysis.next24h > 0 ? `<span>Nächste 24h: <strong>${precipAnalysis.next24h.toFixed(1)} mm</strong></span>` : ''}
+        </div>
+        ${heavyRain ? `<div class="precip-banner-warning">⚠️ Staunässe-Check empfohlen bei Töpfen & Hochbeeten</div>` : ''}
+        ${skippedToday.length > 0 ? `<div class="precip-banner-skipped">✓ ${skippedToday.length} Gieß-${skippedToday.length === 1 ? 'Erinnerung' : 'Erinnerungen'} durch Regen erledigt</div>` : ''}
+      </div>
+    </div>
+  ` : '';
+
   container.innerHTML = `
     <!-- Gieß- & Dünge-Kalender -->
-    ${(todayDeduped.length > 0 || upcomingDeduped.length > 0) ? `
+    ${(todayDeduped.length > 0 || upcomingDeduped.length > 0 || precipBanner) ? `
       <div class="dashboard-section animate-in" style="margin-top: 24px; max-width: 800px;">
         <h2>💧 Gieß- & Dünge-Kalender</h2>
         <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-md);">
-          Automatische Erinnerungen basierend auf deinen aktiven Pflanzungen und den Pflegebedürfnissen aus dem Pflanzenkatalog.
+          Automatische Erinnerungen basierend auf Pflegebedarf und aktuellem Wetter${precipAnalysis ? '' : ' (keine Standort-Wetterdaten — <a href="#" onclick="document.querySelector(\'[data-view=setup]\')?.click();return false;" style="color:var(--color-primary)">Standort konfigurieren</a>)'}.
         </p>
 
-        ${todayDeduped.length > 0 ? `
+        ${precipBanner}
+
+        ${activeToday.length > 0 ? `
           <div style="margin-bottom: var(--space-md);">
             <div style="font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; color: var(--color-primary); margin-bottom: var(--space-sm); letter-spacing: 0.05em;">
               Heute fällig
             </div>
             <div class="care-reminder-list">
-              ${todayDeduped.map(r => `
-                <div class="care-reminder-item care-reminder-today">
-                  <span class="care-reminder-emoji">${r.emoji}</span>
-                  <div class="care-reminder-info">
-                    <div class="care-reminder-title">
-                      ${r.type === 'water' ? 'Gießen' : 'Düngen'}: ${r.plant.emoji} ${r.plant.name}
-                    </div>
-                    <div class="care-reminder-meta">
-                      ${r.bedName} · alle ${r.type === 'water' ? `${r.interval} Tage` : `${r.interval} Wochen`}
-                    </div>
-                  </div>
-                  <span class="care-reminder-badge care-reminder-badge-today">Heute</span>
-                </div>
-              `).join('')}
+              ${activeToday.map(r => renderReminderCard(r, true)).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${skippedToday.length > 0 ? `
+          <div style="margin-bottom: var(--space-md);">
+            <div style="font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: var(--space-sm); letter-spacing: 0.05em;">
+              Durch Regen erledigt
+            </div>
+            <div class="care-reminder-list">
+              ${skippedToday.map(r => renderReminderCard(r, true)).join('')}
             </div>
           </div>
         ` : ''}
@@ -136,25 +231,12 @@ export function renderTasks() {
               Demnächst
             </div>
             <div class="care-reminder-list">
-              ${upcomingDeduped.map(r => `
-                <div class="care-reminder-item">
-                  <span class="care-reminder-emoji">${r.emoji}</span>
-                  <div class="care-reminder-info">
-                    <div class="care-reminder-title">
-                      ${r.type === 'water' ? 'Gießen' : 'Düngen'}: ${r.plant.emoji} ${r.plant.name}
-                    </div>
-                    <div class="care-reminder-meta">
-                      ${r.bedName} · alle ${r.type === 'water' ? `${r.interval} Tage` : `${r.interval} Wochen`}
-                    </div>
-                  </div>
-                  <span class="care-reminder-badge">in ${r.nextIn} ${r.nextIn === 1 ? 'Tag' : 'Tagen'}</span>
-                </div>
-              `).join('')}
+              ${upcomingDeduped.map(r => renderReminderCard(r, false)).join('')}
             </div>
           </div>
         ` : ''}
 
-        ${todayDeduped.length === 0 && upcomingDeduped.length === 0 ? `
+        ${activeToday.length === 0 && upcomingDeduped.length === 0 && skippedToday.length === 0 ? `
           <div class="empty-state" style="padding: var(--space-md);">
             <div class="empty-text" style="font-size: var(--font-size-sm);">Keine anstehenden Pflege-Erinnerungen.</div>
           </div>
@@ -176,7 +258,6 @@ export function renderTasks() {
             <div class="empty-text">Alles erledigt! Keine Aufgaben vorhanden.</div>
           </div>
         ` : tasks.sort((a,b) => {
-             // sort by incomplete first, then date
              if (a.completed !== b.completed) return a.completed ? 1 : -1;
              return new Date(a.dueDate || 0) - new Date(b.dueDate || 0);
            }).map(t => `
@@ -197,7 +278,7 @@ export function renderTasks() {
       </div>
     </div>
 
-    <!-- Pflege-Übersicht (alle Intervalle) -->
+    <!-- Pflege-Intervall-Übersicht -->
     ${careReminders.length > 0 ? `
       <div class="dashboard-section animate-in" style="margin-top: 24px; max-width: 800px;">
         <h2>📋 Pflege-Intervalle</h2>
@@ -206,7 +287,6 @@ export function renderTasks() {
         </p>
         <div class="care-schedule-grid">
           ${(() => {
-            // Group by bed
             const byBed = {};
             const activePlantings = store.getPlantings().filter(p => p.status === 'planted' || p.status === 'growing');
             activePlantings.forEach(p => {
@@ -248,16 +328,13 @@ export function renderTasks() {
       const title = prompt('Welche Aufgabe steht an?');
       if (!title) return;
       const dueDate = prompt('Bis wann? (Format: YYYY-MM-DD) – Optional', new Date().toISOString().split('T')[0]);
-      
       store.addTask({ title, dueDate: dueDate || null });
       renderTasks();
     });
 
     document.querySelectorAll('.task-checkbox').forEach(cb => {
       cb.addEventListener('change', (e) => {
-        const id = e.target.dataset.id;
-        const completed = e.target.checked;
-        store.updateTask(id, { completed });
+        store.updateTask(e.target.dataset.id, { completed: e.target.checked });
         renderTasks();
       });
     });

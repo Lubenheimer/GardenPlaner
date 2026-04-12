@@ -392,6 +392,10 @@ function initEvents() {
     bus.emit('bed:selected', bed);
   });
 
+  bus.on('bed:addPlanting', (bed) => {
+    showPlantingModal(bed.id);
+  });
+
   bus.on('beds:changed', () => {
     renderBedList();
     renderer.render();

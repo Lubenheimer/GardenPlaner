@@ -12,6 +12,9 @@ Zeichne deine Vision exakt auf.
 - **Freie Formgestaltung:** Erstelle Beete, Rasenflächen, Pflastersteine oder Zäune flexibel als Rechteck, Kreis, L-Form oder als komplett individuelles Polygon.
 - **Präzises Planen:** Ein integriertes Mess-Werkzeug (Lineal) und ein zu- und abschaltbares Raster (Grid) helfen dir bei der symmetrischen Anordnung und exakten Flächenzuweisung.
 - **Echtzeit 3D-Ansicht:** Schalte jederzeit per Knopfdruck in eine Pseudo-3D-Ansicht um, um einen räumlichen und plastischen Eindruck deiner Gartenarchitektur zu erhalten.
+- **Rechtsklick-Kontextmenü:** Rechtsklick auf ein beliebiges Objekt öffnet ein Schnellmenü mit Aktionen: Pflanzung hinzufügen, Umbenennen, Duplizieren, Ebene wechseln und Löschen — ohne das Seitenpanel öffnen zu müssen.
+- **Beschriftungen immer lesbar:** Objektnamen und Pflanzen-Emojis bleiben immer horizontal ausgerichtet, auch wenn das Objekt gedreht wird.
+- **Schattenwurf pro Objekt:** Im Objekt-Editor lässt sich der Schattenwurf per Toggle einzeln de-/aktivieren — nützlich z.B. für Bodenflächen oder flache Beete ohne relevante Aufbauhöhe.
 
 ### 🧠 2. Intelligenter Pflanz-Assistent
 Nie wieder schlechte Ernten durch falsche Pflanz-Nachbarn oder mangelnde Planung.
@@ -26,6 +29,7 @@ Finde den perfekten Lichtplatz für jede Pflanze.
 - **Echter Schattenwurf:** Definiere, wo in der Realität „Norden" liegt, und die App berechnet physikalisch korrekt, wie der Schatten deiner Elemente verläuft.
 - **Tageszeit & Monat stufenlos simulieren:** Mit Slidern kannst du genau durchspielen, wie der Schatten morgens um 8:00 Uhr oder abends um 20:00 Uhr im Juli fällt.
 - **Standort-Warnung:** Setzt du eine reine Sonnenpflanze versehentlich in ein schattiges Beet, schlägt das System rechtzeitig Alarm.
+- **Schattenwurf-Toggle:** Jedes Objekt kann einzeln vom Schattenwurf ausgenommen werden (z.B. flache Beete oder Rasenflächen).
 
 ### 📊 4. Zentrale Leitzentrale (Dashboard)
 Dein Garten-Status auf einen Blick.
@@ -41,10 +45,13 @@ Dein Garten-Status auf einen Blick.
 Bewahre den Überblick über deine Kosten.
 - **Ausgaben-Tracker:** Trage Einkäufe (z.B. Erden, Werkzeuge, Saatgut) direkt im Dashboard ein. Die App kategorisiert sie nahtlos in Budgets, ordnet Icons zu und errechnet deine Gesamtausgaben pro Saison.
 
-### ✅ 6. Aufgaben & Gieß-/Dünge-Kalender
-Das integrierte Gedächtnis deines Gartens.
+### ✅ 6. Aufgaben & Intelligenter Gieß-/Dünge-Kalender
+Das integrierte Gedächtnis deines Gartens — jetzt wetter-intelligent.
 - **Aufgaben-Verwaltung:** Hake Checklisten ab oder weise Aufgaben Deadlines zu (z. B. „Hecke schneiden", „Teichfilter reinigen").
 - **Automatische Gieß- & Dünge-Erinnerungen:** Basierend auf den Pflegeintervallen jeder Pflanzung zeigt der Aufgaben-Tab automatisch an, was heute gegossen oder gedüngt werden muss — aufgeteilt in „Heute fällig" (hervorgehoben) und „Demnächst" (nächste 3 Tage).
+- **🌧️ Niederschlags-Integration:** Die App ruft stündliche Regendaten der letzten 24h und die nächsten 48h über Open-Meteo ab. Hat es ausreichend geregnet, wird das Gieß-To-Do automatisch als „Durch Regen erledigt" markiert und durchgestrichen — kein manuelles Eingreifen nötig.
+- **Pflanztyp-spezifische Schwellenwerte:** Dürretolerante Pflanzen (Rosmarin, Thymian — 7+ Tage-Rhythmus) gelten schon ab 3mm als versorgt. Wasser-intensive Kulturen (Tomate, Gurke) benötigen 8mm für eine vollständige Deckung.
+- **Niederschlags-Banner:** Zeigt Regen der letzten Nacht, heute Nacht erwartet und nächste 24h kompakt als Info-Banner. Bei Starkregen (>15mm) erscheint eine Staunässe-Warnung.
 - **Pflege-Intervall-Übersicht:** Kompakte Karten pro Beet mit allen Gieß- (`💧 2d`) und Dünge-Badges (`🧪 2w`) der aktiven Pflanzungen.
 - **Automatische Einkaufslisten:** Setzt du Pflanzen für die Zukunft auf „Geplant", erscheint ein Erinnerungs-Block auf dem Dashboard.
 
@@ -66,7 +73,13 @@ Verwalte mehrere Projekte gleichzeitig.
 - **Mehrere Gärten:** Erstelle, benenne, wechsle zwischen und lösche beliebig viele Garten-Projekte — ideal für Hausgarten, Balkon und Schrebergarten in einer App.
 - **Automatische Migration:** Bestehende Einzelgarten-Daten werden beim Start in das neue Format überführt.
 
-### 💾 11. Lokale Datensicherung & Offline-Betrieb
+### 🎨 11. Farbdesign & Themes
+Personalisiere die App nach deinem Geschmack.
+- **5 kuratierte Farbthemes:** Terracotta (Standard), 🌲 Forest, 🌊 Ocean, 🌾 Harvest und 🌑 Midnight — jedes mit abgestimmter Light- und Dark-Variante.
+- **Sofortige Vorschau:** Visuelle Kacheln mit Farbswatch zeigen das Theme direkt — Klick genügt, kein Neustart nötig.
+- **Persistent gespeichert:** Das gewählte Theme bleibt über Neustarts hinweg erhalten.
+
+### 💾 12. Lokale Datensicherung & Offline-Betrieb
 Deine Daten gehören dir. Alles bleibt lokal gesichert.
 - **Lokaler Express-Server:** Schreibt alle Daten in eine lokale JSON-Datei — keine Cloud, kein Konto.
 - **Dual-Write:** Sofort-Sicherung in localStorage als Cache, debounced Server-Push für Persistenz.
