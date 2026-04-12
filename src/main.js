@@ -48,15 +48,24 @@ function init() {
 
 // ========== Theme ==========
 function applyTheme() {
-  const theme = store.getSettings().theme;
-  document.documentElement.setAttribute('data-theme', theme);
+  const settings = store.getSettings();
+  const theme = settings.theme || 'light';
+  const colorTheme = settings.colorTheme || 'terracotta';
+  document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : '');
+  document.documentElement.setAttribute('data-color', colorTheme === 'terracotta' ? '' : colorTheme);
 }
 
 function toggleTheme() {
   const current = store.getSettings().theme;
   const next = current === 'dark' ? 'light' : 'dark';
   store.updateSettings({ theme: next });
-  document.documentElement.setAttribute('data-theme', next);
+  applyTheme();
+  renderer.render();
+}
+
+export function applyColorTheme(colorTheme) {
+  store.updateSettings({ colorTheme });
+  applyTheme();
   renderer.render();
 }
 

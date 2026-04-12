@@ -1,5 +1,44 @@
 import { store } from '../core/Store.js';
 import { bus } from '../core/EventBus.js';
+import { applyColorTheme } from '../main.js';
+
+const COLOR_THEMES = [
+  {
+    id: 'terracotta',
+    label: 'Terracotta',
+    emoji: '🌿',
+    light: { bg: '#f0ebe0', primary: '#7c5c3e', accent: '#4a7a8a' },
+    dark:  { bg: '#18120e', primary: '#d4956a', accent: '#6eb5c8' },
+  },
+  {
+    id: 'forest',
+    label: 'Forest',
+    emoji: '🌲',
+    light: { bg: '#ebf2ec', primary: '#2d6a4f', accent: '#52796f' },
+    dark:  { bg: '#0d1a10', primary: '#74c69d', accent: '#52b788' },
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean',
+    emoji: '🌊',
+    light: { bg: '#e8f3f8', primary: '#1a6b8a', accent: '#2a9080' },
+    dark:  { bg: '#0a1820', primary: '#46c4e0', accent: '#38c4b0' },
+  },
+  {
+    id: 'harvest',
+    label: 'Harvest',
+    emoji: '🌾',
+    light: { bg: '#fdf4e0', primary: '#9a5e20', accent: '#7a6820' },
+    dark:  { bg: '#1a1205', primary: '#f0a040', accent: '#d4a030' },
+  },
+  {
+    id: 'midnight',
+    label: 'Midnight',
+    emoji: '🌑',
+    light: { bg: '#eef1f8', primary: '#3a5a8c', accent: '#7a5a9c' },
+    dark:  { bg: '#0c1020', primary: '#7ab0e0', accent: '#9a80c8' },
+  },
+];
 
 export function renderSetup() {
   const container = document.getElementById('setup-content');
@@ -17,10 +56,38 @@ export function renderSettingsManager() {
   const levels = store.getLevels();
   const types = store.getElementTypes();
 
+  const currentColorTheme = store.getSettings().colorTheme || 'terracotta';
+  const isDark = (store.getSettings().theme || 'light') === 'dark';
+
   return `
     <div class="config-container dashboard-section animate-in" style="margin-top: 24px;">
       <h2>⚙️ Garten-Einstellungen</h2>
-      <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap; margin-top: 16px;">
+
+      <!-- Theme Picker -->
+      <div style="margin-top: 20px; margin-bottom: 28px;">
+        <h3 style="margin-bottom: 12px;">🎨 Farbdesign</h3>
+        <div class="theme-picker-grid">
+          ${COLOR_THEMES.map(t => {
+            const colors = isDark ? t.dark : t.light;
+            const active = currentColorTheme === t.id;
+            return `
+              <button class="theme-tile ${active ? 'theme-tile-active' : ''}" data-theme-id="${t.id}" title="${t.label}">
+                <div class="theme-tile-preview">
+                  <div style="background: ${colors.bg}; flex: 1; border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px;">
+                    <div style="width: 18px; height: 18px; border-radius: 50%; background: ${colors.primary};"></div>
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: ${colors.accent}; opacity: 0.7;"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: ${colors.primary}; opacity: 0.4;"></div>
+                  </div>
+                </div>
+                <div class="theme-tile-label">${t.emoji} ${t.label}</div>
+                ${active ? '<div class="theme-tile-check">✓</div>' : ''}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap;">
         
         <!-- Grundstück -->
         <div class="config-section" style="flex: 1; min-width: 250px;">
@@ -156,6 +223,7 @@ export function renderSettingsManager() {
         </div>
       </div>
     </div>
+    </div>
   `;
 }
 
@@ -210,6 +278,15 @@ export function bindSettingsEvents(containerBlock, onUpdateCallback) {
 
   locationInput?.addEventListener('blur', () => {
     setTimeout(() => { locationResults.style.display = 'none'; }, 200);
+  });
+
+  // Theme picker
+  containerBlock.querySelectorAll('.theme-tile').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const themeId = btn.dataset.themeId;
+      applyColorTheme(themeId);
+      onUpdateCallback?.();
+    });
   });
 
   containerBlock.querySelector('#location-clear-btn')?.addEventListener('click', () => {
