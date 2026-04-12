@@ -60,6 +60,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           <span>Kalender</span>
         </button>
+        <button class="nav-btn" data-view="catalog" id="nav-catalog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>Katalog</span>
+        </button>
         <button class="nav-btn" data-view="photos" id="nav-photos">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           <span>Fotos</span>
@@ -208,6 +212,15 @@
           <p class="view-subtitle">To-Dos & Erinnerungen</p>
         </div>
         <div id="tasks-content" class="tasks-container" style="padding: 0 20px;"></div>
+      </div>
+
+      <!-- Catalog View -->
+      <div id="view-catalog" class="view">
+        <div class="view-header">
+          <h1>Pflanzen-Katalog</h1>
+          <p class="view-subtitle">System-Pflanzen und eigene Sorten verwalten</p>
+        </div>
+        <div id="catalog-content" style="padding: 0 20px; overflow-y: auto;"></div>
       </div>
 
       <!-- Setup View -->

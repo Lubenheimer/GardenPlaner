@@ -1,5 +1,6 @@
 /**
  * Plant Database — Curated suggestions for common garden plants
+ * Merges with user's custom plants from the local store.
  *
  * Extended fields:
  *   spacing       — Pflanzabstand in cm
@@ -7,6 +8,8 @@
  *   waterDays     — Gießintervall in Tagen (z.B. 2 = alle 2 Tage)
  *   fertilizeWeeks— Düngeintervall in Wochen (z.B. 2 = alle 2 Wochen)
  */
+import { store } from '../core/Store.js';
+
 export const plants = [
   // Gemüse
   { name: 'Tomate', emoji: '🍅', category: 'Gemüse', sowMonth: [3,4], harvestMonth: [7,8,9], nutrition: 'stark', spacing: 50, daysToHarvest: 120, waterDays: 2, fertilizeWeeks: 2, goodNeighbors: ['Basilikum', 'Petersilie', 'Knoblauch', 'Salat'], badNeighbors: ['Kartoffel', 'Erbse', 'Gurke', 'Fenchel'] },
@@ -77,12 +80,26 @@ export const plants = [
 ];
 
 /**
+ * Get all plants (system plants merged with custom overrides/additions)
+ */
+export function getAllPlants() {
+  const custom = store.getCustomPlants() || [];
+  
+  // Create a map to allow custom plants to override system plants by exact name
+  const plantMap = new Map();
+  plants.forEach(p => plantMap.set(p.name.toLowerCase(), { ...p, isSystem: true }));
+  custom.forEach(p => plantMap.set(p.name.toLowerCase(), { ...p, isCustom: true }));
+  
+  return Array.from(plantMap.values());
+}
+
+/**
  * Search plants by query
  */
 export function searchPlants(query) {
   if (!query || query.length < 1) return [];
   const q = query.toLowerCase();
-  return plants.filter(p =>
+  return getAllPlants().filter(p =>
     p.name.toLowerCase().includes(q) ||
     p.category.toLowerCase().includes(q)
   ).slice(0, 10);
@@ -92,7 +109,7 @@ export function searchPlants(query) {
  * Get plant by exact name
  */
 export function getPlant(name) {
-  return plants.find(p => p.name.toLowerCase() === name.toLowerCase());
+  return getAllPlants().find(p => p.name.toLowerCase() === name.toLowerCase());
 }
 
 /**
@@ -100,7 +117,7 @@ export function getPlant(name) {
  */
 export function getSowingPlants(month) {
   const m = month || new Date().getMonth() + 1;
-  return plants.filter(p => p.sowMonth.includes(m));
+  return getAllPlants().filter(p => p.sowMonth && p.sowMonth.includes(m));
 }
 
 /**
@@ -108,7 +125,7 @@ export function getSowingPlants(month) {
  */
 export function getHarvestPlants(month) {
   const m = month || new Date().getMonth() + 1;
-  return plants.filter(p => p.harvestMonth.includes(m));
+  return getAllPlants().filter(p => p.harvestMonth && p.harvestMonth.includes(m));
 }
 
 /**

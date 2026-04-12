@@ -16,6 +16,7 @@ import { renderPhotos } from './components/Photos.js';
 import { renderTasks } from './components/Tasks.js';
 import { showPlantingModal } from './components/PlantingModal.js';
 import { renderSetup } from './components/SettingsManager.js';
+import { renderCatalog } from './components/Catalog.js';
 import { showGardenManager } from './components/GardenManager.js';
 import { bedColors } from './utils/helpers.js';
 
@@ -141,6 +142,7 @@ function renderCurrentView() {
     case 'photos': renderPhotos(); break;
     case 'tasks': renderTasks(); break;
     case 'setup': renderSetup(); break;
+    case 'catalog': renderCatalog(); break;
   }
 }
 

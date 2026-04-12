@@ -42,6 +42,7 @@ const defaultState = {
   activeGardenId: 'garden-1',
   gardens: [makeDefaultGarden('garden-1')],
   elementTypes: JSON.parse(JSON.stringify(DEFAULT_ELEMENT_TYPES)),
+  customPlants: [],
   settings: {
     theme: 'dark',
     showGrid: true,
@@ -158,6 +159,7 @@ class Store {
           createdAt: new Date().toISOString(),
         }],
         elementTypes: parsed.elementTypes || JSON.parse(JSON.stringify(DEFAULT_ELEMENT_TYPES)),
+        customPlants: parsed.customPlants || [],
         settings: { ...defaultState.settings, ...(parsed.settings || {}) },
       };
     }
@@ -167,6 +169,7 @@ class Store {
       ...defaultState,
       ...parsed,
       elementTypes: parsed.elementTypes || JSON.parse(JSON.stringify(DEFAULT_ELEMENT_TYPES)),
+      customPlants: parsed.customPlants || [],
       settings: { ...defaultState.settings, ...(parsed.settings || {}) },
       gardens: (parsed.gardens || []).map(g => ({
         ...makeDefaultGarden(g.id, g.name),
@@ -582,6 +585,43 @@ class Store {
     Object.assign(this.state.settings, updates);
     this.save();
     bus.emit('settings:changed', this.state.settings);
+  }
+
+  // ── Custom Plants (global) ─────────────────────────────────────────
+
+  getCustomPlants() {
+    return this.state.customPlants || [];
+  }
+
+  addCustomPlant(plant) {
+    if (!this.state.customPlants) this.state.customPlants = [];
+    const idx = this.state.customPlants.findIndex(p => p.name.toLowerCase() === plant.name.toLowerCase());
+    if (idx !== -1) {
+      this.state.customPlants[idx] = { ...this.state.customPlants[idx], ...plant };
+    } else {
+      this.state.customPlants.push(plant);
+    }
+    this.save();
+    bus.emit('customplants:changed', this.state.customPlants);
+  }
+
+  updateCustomPlant(originalName, plantUpdates) {
+    if (!this.state.customPlants) this.state.customPlants = [];
+    const idx = this.state.customPlants.findIndex(p => p.name.toLowerCase() === originalName.toLowerCase());
+    if (idx !== -1) {
+      this.state.customPlants[idx] = { ...this.state.customPlants[idx], ...plantUpdates };
+    } else {
+      this.state.customPlants.push({ name: originalName, ...plantUpdates });
+    }
+    this.save();
+    bus.emit('customplants:changed', this.state.customPlants);
+  }
+
+  deleteCustomPlant(name) {
+    if (!this.state.customPlants) return;
+    this.state.customPlants = this.state.customPlants.filter(p => p.name.toLowerCase() !== name.toLowerCase());
+    this.save();
+    bus.emit('customplants:changed', this.state.customPlants);
   }
 
   // ── Element Types (global) ─────────────────────────────────────────

@@ -250,7 +250,10 @@ export function showPlantingModal(bedId) {
         <div class="autocomplete-item" data-name="${p.name}" data-emoji="${p.emoji}" data-category="${p.category}">
           <span class="plant-emoji">${p.emoji}</span>
           <div class="plant-info">
-            <div class="plant-name">${p.name}</div>
+            <div class="plant-name">
+              ${p.name}
+              ${p.isCustom ? `<span style="font-size: 10px; color: var(--color-accent); font-weight: 600; margin-left: 4px;">[Eigene]</span>` : ''}
+            </div>
             <div class="plant-category">${p.category}${p.spacing ? ` · ${p.spacing} cm` : ''}${p.daysToHarvest ? ` · ${p.daysToHarvest}d` : ''}</div>
           </div>
         </div>
