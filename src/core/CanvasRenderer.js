@@ -3,6 +3,7 @@
  */
 import { store } from './Store.js';
 import { bus } from './EventBus.js';
+import { getPlant } from '../data/plants.js';
 
 export class CanvasRenderer {
   constructor(canvas) {
@@ -277,6 +278,14 @@ export class CanvasRenderer {
       this.interaction.drawPreview(this.ctx);
     }
 
+    if (this.showCompanionRelationships) {
+      this._drawCompanionRelationships(this.ctx);
+      // Trigger continuous animation for the energy flows 
+      if (!this.animationFrameLooping) {
+        requestAnimationFrame(() => this._draw());
+      }
+    }
+
     for (const c of allCanvases) {
       if (c) c.getContext('2d').restore();
     }
@@ -482,6 +491,91 @@ export class CanvasRenderer {
         ctx.globalAlpha = 1;
       }
     }
+
+    // ── Pass 3: Intra-Bed Placements (Pin, Line, Area) ─────────
+    ctx.save();
+    this._buildBedPath(ctx, bed);
+    ctx.clip(); // Ensure nothing spills out of the bed constraints
+    
+    // Wir müssen die Plantings hier erneut holen, da wir in der Pass1/2/3 Rotation sind
+    const activePl = store.getPlantings(bed.id).filter(p => !p.archived);
+    for (const p of activePl) {
+      if (!p.placements || p.placements.length === 0) continue;
+      const tPlant = getPlant(p.name);
+      // Extrahiere Radius von Pflanze (z.B. Tomate 60cm Abstand -> 30cm Radius) 
+      const spacing = parseInt(p.spacing) || (tPlant ? parseInt(tPlant.spacing) : 30);
+      const radius = Math.max(spacing / 2, 5); // Mindestens 5px
+
+      for (const loc of p.placements) {
+        if (loc.type === 'point') {
+          const px = bed.x + loc.x;
+          const py = bed.y + loc.y;
+          // Radius Kreis
+          ctx.beginPath();
+          ctx.arc(px, py, radius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(74, 222, 128, 0.5)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // Emoji Markierung
+          ctx.font = `400 ${Math.max(10, 16 / Math.max(this.zoom, 0.5))}px Inter`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#000';
+          ctx.fillText(p.emoji, px, py);
+        } else if (loc.type === 'line') {
+          const x1 = bed.x + loc.p1.x;
+          const y1 = bed.y + loc.p1.y;
+          const x2 = bed.x + loc.p2.x;
+          const y2 = bed.y + loc.p2.y;
+          
+          // Leitlinie
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          // Pflanz-Punkte entlang der Linie
+          const dist = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+          // Wie viele Pflanzen passen auf die Linie?
+          const steps = Math.max(1, Math.floor(dist / spacing));
+          for (let i = 0; i <= steps; i++) {
+             const t = steps > 0 ? (i / steps) : 0;
+             const px = x1 + (x2 - x1) * t;
+             const py = y1 + (y2 - y1) * t;
+             ctx.beginPath();
+             ctx.arc(px, py, radius, 0, Math.PI * 2);
+             ctx.fillStyle = 'rgba(74, 222, 128, 0.1)';
+             ctx.fill();
+             ctx.font = `400 ${Math.max(8, 12 / Math.max(this.zoom, 0.5))}px Inter`;
+             ctx.textAlign = 'center';
+             ctx.textBaseline = 'middle';
+             ctx.fillText(p.emoji, px, py);
+          }
+        } else if (loc.type === 'area') {
+          const ax = bed.x + loc.x;
+          const ay = bed.y + loc.y;
+          ctx.beginPath();
+          ctx.rect(ax, ay, loc.w, loc.h);
+          ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(74, 222, 128, 0.5)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          
+          ctx.font = `400 ${Math.max(14, 20 / Math.max(this.zoom, 0.5))}px Inter`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(p.emoji, ax + loc.w / 2, ay + loc.h / 2);
+        }
+      }
+    }
+    ctx.restore();
 
     // ── Restore rotation BEFORE drawing label ──────────────────────
     // This ensures the label is always drawn horizontally, regardless
@@ -872,5 +966,129 @@ export class CanvasRenderer {
       ctx.lineTo(pts[1][0]-1, pts[1][1]+3);
       ctx.stroke();
     }
+  }
+
+  _drawCompanionRelationships(ctx) {
+    const beds = store.getBeds();
+    
+    // Map beds with active plantings and calculate their centers
+    const activeBeds = beds.map(b => {
+      const activePlantings = store.getPlantings(b.id).filter(p => !p.archived);
+      return {
+        id: b.id,
+        bed: b,
+        cx: b.x + b.width / 2,
+        cy: b.y + b.height / 2,
+        plantings: activePlantings
+      };
+    }).filter(b => b.plantings.length > 0);
+
+    ctx.save();
+    
+    // Animated dash offset
+    const dashOffset = (performance.now() / 40) % 20;
+
+    // Phase 1: Draw Inter-Bed connecting lines
+    for (let i = 0; i < activeBeds.length; i++) {
+        for (let j = i + 1; j < activeBeds.length; j++) {
+            const b1 = activeBeds[i];
+            const b2 = activeBeds[j];
+            
+            // Distanz zwischen Beeten
+            const dx = b2.cx - b1.cx;
+            const dy = b2.cy - b1.cy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            // 150 cm Abstands-Regel für Beete
+            if (dist > 150) continue;
+
+            let score = 0;
+            let hasInteraction = false;
+
+            // Prüfe jeden gegen jeden
+            for (const p1 of b1.plantings) {
+                const plant1 = getPlant(p1.name);
+                if (!plant1) continue;
+                
+                for (const p2 of b2.plantings) {
+                    const plant2 = getPlant(p2.name);
+                    if (!plant2) continue;
+
+                    if (plant1.goodNeighbors?.includes(plant2.name)) {
+                        score += 1; hasInteraction = true;
+                    }
+                    if (plant1.badNeighbors?.includes(plant2.name)) {
+                        score -= 1; hasInteraction = true;
+                    }
+                    if (plant2.goodNeighbors?.includes(plant1.name)) {
+                        score += 1; hasInteraction = true;
+                    }
+                    if (plant2.badNeighbors?.includes(plant1.name)) {
+                        score -= 1; hasInteraction = true;
+                    }
+                }
+            }
+
+            if (hasInteraction && score !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(b1.cx, b1.cy);
+                ctx.lineTo(b2.cx, b2.cy);
+                ctx.lineWidth = 3;
+                
+                if (score > 0) {
+                    // Symbiose: Pulsierend grüner Fluss
+                    ctx.strokeStyle = 'rgba(34, 197, 94, 0.9)';
+                    ctx.setLineDash([8, 6]);
+                    ctx.lineDashOffset = -dashOffset; 
+                } else if (score < 0) {
+                    // Konkurrenz: Rot, gestrichelt und "feindseliger" Flow
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+                    ctx.setLineDash([4, 4]);
+                    ctx.lineDashOffset = dashOffset * 1.5; 
+                }
+                
+                ctx.stroke();
+            }
+        }
+        
+        // Phase 2: Intra-Bed Analysis & Glowing
+        let intraScore = 0;
+        for (let x = 0; x < b1.plantings.length; x++) {
+            const px = getPlant(b1.plantings[x].name);
+            if (!px) continue;
+            for (let y = x + 1; y < b1.plantings.length; y++) {
+                const py = getPlant(b1.plantings[y].name);
+                if (!py) continue;
+                if (px.goodNeighbors?.includes(py.name)) intraScore++;
+                if (px.badNeighbors?.includes(py.name)) intraScore--;
+                if (py.goodNeighbors?.includes(px.name)) intraScore++;
+                if (py.badNeighbors?.includes(px.name)) intraScore--;
+            }
+        }
+        
+        // Draw the inner glow on the bed
+        if (intraScore !== 0) {
+            ctx.beginPath();
+            if (b1.bed.type === 'circle') {
+                ctx.arc(b1.cx, b1.cy, (b1.bed.width/2) + 8, 0, Math.PI*2);
+            } else {
+                ctx.roundRect(b1.bed.x - 4, b1.bed.y - 4, b1.bed.width + 8, b1.bed.height + 8, 4);
+            }
+            
+            if (intraScore > 0) {
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+                ctx.strokeStyle = 'rgb(34, 197, 94)';
+            } else {
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+                ctx.strokeStyle = 'rgb(239, 68, 68)';
+            }
+            ctx.setLineDash([]);
+            ctx.lineWidth = 1;
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
+    
+    ctx.restore();
   }
 }

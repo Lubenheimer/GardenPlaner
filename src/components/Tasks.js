@@ -448,11 +448,7 @@ export function renderTasks() {
   // Bind Events
   setTimeout(() => {
     document.getElementById('add-task-btn')?.addEventListener('click', () => {
-      const title = prompt('Welche Aufgabe steht an?');
-      if (!title) return;
-      const dueDate = prompt('Bis wann? (Format: YYYY-MM-DD) – Optional', new Date().toISOString().split('T')[0]);
-      store.addTask({ title, dueDate: dueDate || null });
-      renderTasks();
+      showTaskModal();
     });
 
     document.querySelectorAll('.task-checkbox').forEach(cb => {
@@ -472,4 +468,54 @@ export function renderTasks() {
       });
     });
   }, 0);
+}
+
+function showTaskModal() {
+  const overlay = document.getElementById('modal-overlay');
+  const container = document.getElementById('modal-container');
+  
+  const today = new Date().toISOString().split('T')[0];
+
+  container.innerHTML = `
+    <div class="modal-header">
+      <h3 style="margin:0; font-size: 1.25rem;">Neue Aufgabe</h3>
+      <button id="close-modal" class="icon-btn">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px;">
+      <div class="form-group">
+        <label>Aufgabe</label>
+        <input type="text" id="task-title" class="form-control" placeholder="z.B. Hecke schneiden" autofocus>
+      </div>
+      <div class="form-group" style="margin-top: 15px;">
+        <label>Bis wann? (Optional)</label>
+        <input type="date" id="task-duedate" class="form-control" value="${today}">
+      </div>
+      <div class="form-group" style="margin-top: 20px;">
+        <button id="save-task-btn" class="btn primary" style="width:100%">Aufgabe erstellen</button>
+      </div>
+    </div>
+  `;
+
+  overlay.classList.remove('hidden');
+
+  const closeModal = () => {
+    overlay.classList.add('hidden');
+    container.innerHTML = '';
+  };
+
+  document.getElementById('close-modal').onclick = closeModal;
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+
+  document.getElementById('save-task-btn').onclick = () => {
+    const title = document.getElementById('task-title').value.trim();
+    if (!title) {
+      document.getElementById('task-title').style.borderColor = 'var(--color-danger)';
+      return;
+    }
+    const dueDate = document.getElementById('task-duedate').value;
+    
+    store.addTask({ title, dueDate: dueDate || null });
+    closeModal();
+    renderTasks();
+  };
 }

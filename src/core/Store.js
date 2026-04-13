@@ -432,6 +432,7 @@ class Store {
       name:                planting.name,
       emoji:               planting.emoji || '🌱',
       category:            planting.category || '',
+      isPerennial:         planting.isPerennial || false,
       datePlanted:         planting.datePlanted || null,
       dateHarvest:         planting.dateHarvest || null,
       dateHarvestExpected: planting.dateHarvestExpected || null,
@@ -456,6 +457,7 @@ class Store {
    * - Alle aktuellen Pflanzungen (egal welcher Status) werden mit `archived: true`
    *   und dem aktuellen Saison-Jahr markiert.
    * - `planned`-Pflanzungen werden auf Wunsch des Nutzers gelöscht oder archiviert.
+   * - Stauden/Mehrjährige (isPerennial) werden archiviert, aber sofort frisch als Klon in die neue Saison übertragen.
    * - Der neue Saisonname wird im Garden-Objekt gespeichert.
    * 
    * @param {string} newSeason  z.B. '2027'
@@ -465,11 +467,34 @@ class Store {
     const active = this._active();
     const oldSeason = this.getCurrentSeason();
 
+    const clones = [];
+
     active.plantings = active.plantings.map(p => {
       if (p.archived) return p; // already archived from a previous season transition
-      if (p.status === 'planned' && deletePlanned) return null; // mark for deletion
-      return { ...p, archived: true, season: p.season || oldSeason };
+      if (p.status === 'planned' && deletePlanned && !p.isPerennial) return null; // mark for deletion
+
+      // If perennial, create a fresh clone for the new season
+      if (p.isPerennial) {
+        clones.push({
+          ...p,
+          id: this.generateId('planting'),
+          season: newSeason,
+          archived: false,
+          dateHarvest: null,
+          dateHarvestExpected: null,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      return {
+        ...p,
+        season: p.season || oldSeason,
+        archived: true
+      };
     }).filter(Boolean);
+
+    // Append cloned perennials to the active pool
+    active.plantings.push(...clones);
 
     // Set new season
     active.currentSeason = String(newSeason);

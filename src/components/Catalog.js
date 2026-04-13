@@ -145,6 +145,13 @@ function openPlantEditor(existingPlant = null) {
         </select>
       </div>
 
+      <div class="form-group" style="margin-top: 10px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:normal;">
+          <input type="checkbox" id="cp-perennial" ${p.isPerennial ? 'checked' : ''} style="width:16px; height:16px;">
+          <strong>Mehrjährig / Staude</strong> (Pflanze überwintert und bleibt beim Saisonwechsel erhalten)
+        </label>
+      </div>
+
       <div style="display:flex; gap:10px;">
         <div class="form-group" style="flex: 1;">
           <label>Pflanzabstand (cm)</label>
@@ -186,6 +193,7 @@ function openPlantEditor(existingPlant = null) {
       emoji: document.getElementById('cp-emoji').value || '🌱',
       category: document.getElementById('cp-category').value,
       nutrition: document.getElementById('cp-nutrition').value,
+      isPerennial: document.getElementById('cp-perennial').checked,
       spacing: parseInt(document.getElementById('cp-spacing').value, 10) || 30,
       daysToHarvest: parseInt(document.getElementById('cp-days').value, 10) || 60,
       waterDays: parseInt(document.getElementById('cp-water').value, 10) || 3,

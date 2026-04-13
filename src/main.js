@@ -162,6 +162,13 @@ function initToolbar() {
     });
   });
 
+  // Mischkultur View Toggle
+  document.getElementById('tool-companion')?.addEventListener('click', (e) => {
+    renderer.showCompanionRelationships = !renderer.showCompanionRelationships;
+    e.currentTarget.classList.toggle('active', renderer.showCompanionRelationships);
+    renderer._draw(); // force redraw immediately
+  });
+
   // 3D View Toggle
   let is3DView = false;
   document.getElementById('tool-3d')?.addEventListener('click', (e) => {

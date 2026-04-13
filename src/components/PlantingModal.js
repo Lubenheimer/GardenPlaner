@@ -317,6 +317,7 @@ export function showPlantingModal(bedId) {
       name: plant.name,
       emoji: plant.emoji,
       category: plant.category,
+      isPerennial: plant.isPerennial || false,
       status: document.getElementById('plant-status-select').value,
       datePlanted: dateInput.value || null,
       dateHarvestExpected: harvestDateInput.value || null,

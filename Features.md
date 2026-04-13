@@ -19,6 +19,7 @@ Zeichne deine Vision exakt auf.
 ### 🧠 2. Intelligenter Pflanz-Assistent
 Nie wieder schlechte Ernten durch falsche Pflanz-Nachbarn oder mangelnde Planung.
 - **Eingebaute Botanik-Datenbank:** Über 68 Pflanzen (Gemüse, Kräuter, Obst, Blumen) mit Guten und Schlechten Nachbarn, Nährstoffbedarf, Pflanzabstand (cm), Erntezeit (Tage) sowie Gieß- und Düngeintervallen.
+- **Mischkultur-Visualisierung (Canvas):** Ein spezieller "Mischkultur"-Modus im Canvas zeigt über leuchtende grüne / rote Energie-Flüsse sofort gute und schlechte direkte Nachbarn, sowohl *innerhalb* eines Beetes als auch auf benachbarte Beete (bis zu 1,5m Distanz).
 - **Live-Warnungen:** Fügst du eine Pflanze neben eine inkompatible Pflanze in dasselbe Beet, warnt dich das System sofort mit einem Live-PopUp — inkl. Bodencheck (sandig/lehmig) und Lichtanalyse.
 - **Erweiterte Pflanzungserfassung:** Beim Hinzufügen trage Anzahl (Stück), Sorte/Varietät und Pflanzabstand ein. Pflanzabstand und geplantes Erntedatum werden automatisch aus dem Katalog befüllt.
 - **Info-Badges:** Beim Auswählen einer Pflanze erhältst du sofort Kurzinfos zu Nährstoffbedarf, Abstand, Erntezeit und Pflegeintervallen.
@@ -90,6 +91,7 @@ Den Gartenplan professionell auf Papier bringen.
 ### 🗄️ 11. Saison-System & Archiv
 Gieß dein Wissen nicht weg — nimm es mit ins nächste Jahr.
 - **Weicher Jahreswechsel:** Im Frühjahr startest du mit einem Klick in die neue Saison. Alle erledigten Pflanzungen werden archiviert, dein Beet-Layout bleibt bestehen.
+- **Mehrjährige Pflanzen (Stauden):** Obstbäume, Beeren, Spargel oder eigene Pflanzen als Staude markieren. Beim Saisonwechsel werden sie archiviert (für statistische Sauberkait) und automatisch völlig nahtlos in die neue Saison geklont.
 - **Archiv-Ansicht:** Die Statistik lässt sich jederzeit per Dropdown auf vergangene Jahre filtern.
 - **Völlig ohne Datenverlust:** Deine Pflanz-Historie bleibt für immer im Store abrufbar.
 

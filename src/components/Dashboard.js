@@ -443,25 +443,7 @@ export function renderDashboard() {
     });
 
     document.getElementById('add-expense-btn')?.addEventListener('click', () => {
-      const name = prompt('Wofür wurde Geld ausgegeben? (z.B. Blumenerde)');
-      if (!name) return;
-      const amountStr = prompt('Wie viel hat es gekostet? (z.B. 14.50)');
-      if (!amountStr) return;
-      
-      const amount = parseFloat(amountStr.replace(',', '.'));
-      if (isNaN(amount)) {
-        alert('Ungültiger Betrag!');
-        return;
-      }
-      
-      let category = 'misc';
-      const n = name.toLowerCase();
-      if (n.includes('samen') || n.includes('saat') || n.includes('pflanze')) category = 'seeds';
-      if (n.includes('erde') || n.includes('dünger') || n.includes('kompost')) category = 'soil';
-      if (n.includes('werkzeug') || n.includes('spaten') || n.includes('schere')) category = 'tools';
-      
-      store.addExpense({ name, amount, category });
-      renderDashboard();
+      showBudgetModal();
     });
 
     // ── Neue Saison starten ───────────────────────────────────────
@@ -518,4 +500,66 @@ export function renderDashboard() {
       });
     });
   }, 0);
+}
+
+function showBudgetModal() {
+  const overlay = document.getElementById('modal-overlay');
+  const container = document.getElementById('modal-container');
+  
+  container.innerHTML = `
+    <div class="modal-header">
+      <h3 style="margin:0; font-size: 1.25rem;">Neue Ausgabe</h3>
+      <button id="close-modal" class="icon-btn">&times;</button>
+    </div>
+    <div class="modal-body" style="padding: 20px;">
+      <div class="form-group">
+        <label>Titel / Artikel</label>
+        <input type="text" id="budget-title" class="form-control" placeholder="z.B. Blumenerde" autofocus>
+      </div>
+      <div class="form-group" style="margin-top: 15px;">
+        <label>Betrag (€)</label>
+        <input type="number" step="0.01" id="budget-amount" class="form-control" placeholder="z.B. 14.50">
+      </div>
+      <div class="form-group" style="margin-top: 20px;">
+        <button id="save-budget-btn" class="btn primary" style="width:100%">Ausgabe speichern</button>
+      </div>
+    </div>
+  `;
+
+  overlay.classList.remove('hidden');
+
+  const closeModal = () => {
+    overlay.classList.add('hidden');
+    container.innerHTML = '';
+  };
+
+  document.getElementById('close-modal').onclick = closeModal;
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+
+  document.getElementById('save-budget-btn').onclick = () => {
+    const name = document.getElementById('budget-title').value.trim();
+    const amountStr = document.getElementById('budget-amount').value;
+    
+    if (!name) {
+      document.getElementById('budget-title').style.borderColor = 'var(--color-danger)';
+      return;
+    }
+    
+    const amount = parseFloat(amountStr.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
+      document.getElementById('budget-amount').style.borderColor = 'var(--color-danger)';
+      return;
+    }
+
+    let category = 'misc';
+    const n = name.toLowerCase();
+    if (n.includes('samen') || n.includes('saat') || n.includes('pflanze')) category = 'seeds';
+    if (n.includes('erde') || n.includes('dünger') || n.includes('kompost')) category = 'soil';
+    if (n.includes('werkzeug') || n.includes('schere') || n.includes('handschuhe')) category = 'tools';
+    if (n.includes('wasser') || n.includes('schlauch') || n.includes('gieß')) category = 'water';
+
+    store.addExpense({ name, amount, category });
+    closeModal();
+    renderDashboard(); // refresh chart
+  };
 }
