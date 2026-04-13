@@ -61,6 +61,7 @@ Das integrierte Gedächtnis deines Gartens — jetzt wetter-intelligent.
 - **Niederschlags-Banner:** Zeigt Regen der letzten Nacht, heute Nacht erwartet und nächste 24h kompakt als Info-Banner. Bei Starkregen (>15mm) erscheint eine Staunässe-Warnung.
 - **Pflege-Intervall-Übersicht:** Kompakte Karten pro Beet mit allen Gieß- (`💧 2d`) und Dünge-Badges (`🧪 2w`) der aktiven Pflanzungen.
 - **Automatische Einkaufslisten:** Setzt du Pflanzen für die Zukunft auf „Geplant", erscheint ein Erinnerungs-Block auf dem Dashboard.
+- **🌱 Smarte Aussaat-Erinnerungen & Frost-Warnung:** Geplante Pflanzungen der nächsten 14 Tage (aus dem Gantt-Plan) erscheinen priorisiert im Aufgaben-Tab. Sinkt die lokale Temperatur in dieser Zeit auf ≤2 °C, warnt dich die App gezielt vor gefährlichem Nachtfrost — außer bei resistentem Wintergemüse.
 
 ### 📅 8. Jahreskalender & Gantt-Diagramm
 Plane die gesamte Saison auf einen Blick.

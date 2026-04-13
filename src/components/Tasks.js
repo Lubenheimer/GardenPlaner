@@ -142,6 +142,114 @@ function renderReminderCard(r, isToday) {
   `;
 }
 
+// ── Aussaat & Pflanz-Erinnerung ───────────────────────────────────────
+function getUpcomingFrostAlerts() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('gp_weather_cache') || 'null');
+    if (cached && cached.data) {
+      const frostDays = [];
+      const nowMs = Date.now();
+      cached.data.forEach(d => {
+        if (d.tempMin <= 2) {
+          const dt = new Date(d.date);
+          if (dt.getTime() >= nowMs - 24 * 3600 * 1000) {
+            frostDays.push(dt);
+          }
+        }
+      });
+      return frostDays;
+    }
+  } catch {}
+  return [];
+}
+
+function generateSowingReminders() {
+  const plantings = store.getPlantings().filter(p => p.status === 'planned');
+  const beds = store.getBeds();
+  const bedMap = {};
+  beds.forEach(b => { bedMap[b.id] = b; });
+  
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  const frostDates = getUpcomingFrostAlerts();
+  
+  const sowingReminders = plantings.map(p => {
+    if (!p.datePlanted) return null;
+    const plant = getPlant(p.name);
+    const bedName = bedMap[p.bedId]?.name || 'Unbekanntes Beet';
+    
+    // We treat datePlanted as the planned sowing/planting date for "planned" status
+    const plannedDate = new Date(p.datePlanted);
+    plannedDate.setHours(0,0,0,0);
+    const diffDays = Math.round((plannedDate - today) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 14) return null; // Only show next 14 days
+    
+    let isFrostResistant = false;
+    // Check if frost resistant: Kohl, Feldsalat, Wurzelgemüse, Gründüngung, missing plant data implies ignore
+    if (plant && (plant.emoji === '🥬' || plant.emoji === '🥗' || plant.emoji === '🤍' || plant.emoji === '🥕' || plant.nutrition === 'gruen')) {
+      isFrostResistant = true; 
+    }
+    
+    let hasFrostWarning = false;
+    // Warn if frost is coming and it's not frost resistant, and sowing is within a week
+    if (frostDates.length > 0 && Math.abs(diffDays) <= 7 && !isFrostResistant) {
+      hasFrostWarning = true;
+    }
+    
+    return {
+      type: 'sow',
+      plant: p,
+      plantData: plant || { name: p.name, emoji: p.emoji },
+      bedName,
+      diffDays,
+      isToday: diffDays === 0,
+      isOverdue: diffDays < 0,
+      dateFormatted: plannedDate.toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric'}),
+      hasFrostWarning
+    };
+  }).filter(Boolean);
+  
+  sowingReminders.sort((a,b) => a.diffDays - b.diffDays);
+  return sowingReminders;
+}
+
+function renderSowingCard(r) {
+  const cardClass = r.isOverdue || r.isToday ? 'care-reminder-item care-reminder-today' : 'care-reminder-item';
+  let badge = '';
+  
+  if (r.hasFrostWarning) {
+    badge = `<span class="care-reminder-badge" style="background:var(--color-danger);color:#fff;border-color:var(--color-danger);font-weight:600;">Frostgefahr! ❄️</span>`;
+  } else if (r.isOverdue) {
+    badge = `<span class="care-reminder-badge" style="background:#f59e0b;color:#fff;border-color:#f59e0b;font-weight:600;">Überfällig</span>`;
+  } else if (r.isToday) {
+    badge = `<span class="care-reminder-badge care-reminder-badge-today">Heute pflanzen</span>`;
+  } else {
+    badge = `<span class="care-reminder-badge">am ${r.dateFormatted}</span>`;
+  }
+
+  const frostNote = r.hasFrostWarning 
+    ? `<div style="color: var(--color-danger); font-size: 11px; margin-top: 4px; font-weight:600;">⚠️ Wetter warnt vor Nachtfrost — Pflanzen besser geschützt lassen!</div>`
+    : '';
+
+  return `
+    <div class="${cardClass}" style="${r.hasFrostWarning ? 'border-color:var(--color-danger); background:rgba(239,68,68,0.05);' : ''}">
+      <span class="care-reminder-emoji">${r.plantData.emoji}</span>
+      <div class="care-reminder-info">
+        <div class="care-reminder-title" style="margin-bottom: 2px;">
+          ${r.plantData.name} ${r.plant.variety ? `<span style="font-weight:400; font-size:11px;">(${r.plant.variety})</span>` : ''} 
+          ${r.plant.quantity ? `<span style="color:var(--color-primary); font-size:11px;">· ${r.plant.quantity} Stk</span>` : ''}
+        </div>
+        <div class="care-reminder-meta">
+          📍 ${r.bedName}
+        </div>
+        ${frostNote}
+      </div>
+      ${badge}
+    </div>
+  `;
+}
 export function renderTasks() {
   const container = document.getElementById('tasks-content');
   const tasks = store.getTasks();
@@ -192,7 +300,22 @@ export function renderTasks() {
     </div>
   ` : '';
 
+  const sowingReminders = generateSowingReminders();
+
   container.innerHTML = `
+    <!-- Aussaat & Pflanzplan -->
+    ${sowingReminders.length > 0 ? `
+      <div class="dashboard-section animate-in" style="max-width: 800px;">
+        <h2>🌱 Aussaat- & Pflanzplan</h2>
+        <p style="font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-md);">
+          Deine geplanten Pflanzungen der nächsten 14 Tage.
+        </p>
+        <div class="care-reminder-list">
+          ${sowingReminders.map(r => renderSowingCard(r)).join('')}
+        </div>
+      </div>
+    ` : ''}
+
     <!-- Gieß- & Dünge-Kalender -->
     ${(todayDeduped.length > 0 || upcomingDeduped.length > 0 || precipBanner) ? `
       <div class="dashboard-section animate-in" style="margin-top: 24px; max-width: 800px;">
