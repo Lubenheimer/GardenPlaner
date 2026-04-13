@@ -360,12 +360,19 @@ export class CanvasInteraction {
 
   _onDblClick(e) {
     if (!this.enabled) return;
-    
     const pos = this._getMousePos(e);
     const world = this.renderer.screenToWorld(pos.x, pos.y);
     const bed = this.renderer.getBedAtPosition(world.x, world.y);
     if (bed) {
-      bus.emit('bed:edit', bed);
+      // If already in focus mode for this bed, exit
+      if (this.renderer.focusBedId === bed.id) {
+        this.renderer.exitFocus();
+      } else {
+        this.renderer.focusBed(bed.id);
+      }
+    } else if (this.renderer.focusBedId) {
+      // Doppelklick auf leere Fläche beendet Fokus
+      this.renderer.exitFocus();
     }
   }
 
@@ -415,6 +422,9 @@ export class CanvasInteraction {
           <span class="ctx-icon">🌱</span> Pflanzung hinzufügen
         </div>
       ` : ''}
+      <div class="context-menu-item" data-action="focus">
+        <span class="ctx-icon">🔍</span> Fokus (Beet einzoomen)
+      </div>
       <div class="context-menu-item" data-action="rename">
         <span class="ctx-icon">✏️</span> Umbenennen
       </div>
@@ -447,6 +457,8 @@ export class CanvasInteraction {
 
         if (action === 'plant') {
           bus.emit('bed:addPlanting', bed);
+        } else if (action === 'focus') {
+          this.renderer.focusBed(bed.id);
         } else if (action === 'rename') {
           const newName = prompt('Neuer Name:', bed.name);
           if (newName && newName.trim()) {

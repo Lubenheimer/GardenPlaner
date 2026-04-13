@@ -1782,3 +1782,361 @@
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-sm);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   BEET-FOKUS: Floating Exit Button
+═══════════════════════════════════════════════════════════ */
+
+.focus-exit-btn {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 99px;
+  cursor: pointer;
+  user-select: none;
+
+  /* Premium glass look */
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  box-shadow: 0 4px 24px var(--color-shadow-strong),
+              0 0 0 1px var(--color-primary-soft) inset;
+
+  /* Entrance animation */
+  animation: focusExitIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.focus-exit-btn:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 8px 32px var(--color-shadow-strong),
+              0 0 0 1px var(--color-primary) inset;
+}
+
+.focus-exit-btn:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
+.focus-exit-btn kbd {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary);
+  font-family: inherit;
+  opacity: 0.85;
+}
+
+@keyframes focusExitIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   JAHRESSTATISTIK
+═══════════════════════════════════════════════════════════ */
+
+/* KPI Row */
+.stats-kpi-row {
+  display: flex;
+  gap: var(--space-default);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+
+.stats-kpi-card {
+  flex: 1;
+  min-width: 130px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.stats-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--color-shadow);
+}
+
+.stats-kpi-icon {
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.stats-kpi-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.stats-kpi-value small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-left: 2px;
+}
+
+.stats-kpi-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Grid für Abschnitte */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: var(--space-default);
+  margin-bottom: var(--space-lg);
+}
+
+/* Horizontale Bar-Charts (Ernte/Kategorie) */
+.stats-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.stats-bar-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 70px;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.stats-bar-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats-bar-track {
+  height: 10px;
+  background: var(--color-bg-secondary);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.stats-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stats-bar-secondary {
+  background: var(--color-accent);
+}
+
+.stats-bar-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: right;
+}
+
+/* Vertikal-Säulen-Chart (Ausgaben/Monat) */
+.stats-column-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  padding-top: var(--space-sm);
+}
+
+.stats-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+}
+
+.stats-col-bar {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 100%;
+}
+
+.stats-col-fill {
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-dark, var(--color-primary)));
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  transition: height 0.5s ease;
+}
+
+.stats-col-label {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.stats-col-value {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Donut-Liste (Ausgaben nach Kategorie) */
+.stats-donut-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.stats-donut-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 100px;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-sm);
+}
+
+.stats-donut-bar {
+  height: 10px;
+  background: var(--color-bg-secondary);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.stats-donut-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 99px;
+}
+
+/* Status-Grid */
+.stats-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.stats-status-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  text-align: center;
+}
+
+.stats-status-count {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.stats-status-label {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+/* Progress-Bar (Tasks) */
+.stats-progress-wrap {
+  margin-top: var(--space-sm);
+}
+
+.stats-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.stats-progress-bar {
+  height: 12px;
+  background: var(--color-bg-secondary);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+}
+
+.stats-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-success), var(--color-primary));
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.stats-task-pills {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.stats-pill {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-weight: 600;
+}
+
+.stats-pill.done {
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--color-success);
+}
+
+.stats-pill.open {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+}
+
+/* Export Bar */
+.stats-export-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  margin-top: var(--space-default);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+

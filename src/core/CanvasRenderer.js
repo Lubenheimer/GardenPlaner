@@ -2,6 +2,7 @@
  * CanvasRenderer — Renders the garden canvas with beds, grid, and selection
  */
 import { store } from './Store.js';
+import { bus } from './EventBus.js';
 
 export class CanvasRenderer {
   constructor(canvas) {
@@ -29,6 +30,10 @@ export class CanvasRenderer {
     this.hoveredBedId = null;
     this.draggingBedId = null;
     this.animationFrame = null;
+
+    // ── Focus / Zoom-to-Bed ────────────────────────────────────────
+    this.focusBedId   = null;  // ID of the currently focused bed (null = overview)
+    this._focusAnim   = null;  // rAF handle for smooth camera animation
 
     this.resize();
   }
@@ -63,6 +68,78 @@ export class CanvasRenderer {
   setZoom(zoom) {
     this.zoom = Math.max(0.2, Math.min(3, zoom));
     this.render();
+  }
+
+  // ── Beet-Fokus (Zoom in, Dimming) ─────────────────────────────────
+
+  /**
+   * Smooth-animiert die Kamera auf das gewählte Beet.
+   * Alle anderen Beete werden gedimmt (Opacity 0.25).
+   */
+  focusBed(bedId, padding = 80) {
+    const bed = store.getBed(bedId);
+    if (!bed) return;
+
+    this.focusBedId = bedId;
+
+    // Bounding box des Beetes
+    const bW = bed.width  || 100;
+    const bH = bed.height || 100;
+    const W  = this.canvasWidth;
+    const H  = this.canvasHeight;
+
+    const targetZoom = Math.min(
+      (W - padding * 2) / bW,
+      (H - padding * 2) / bH,
+      6  // max zoom für Fokus (höher als normales Max von 3)
+    );
+    const targetX = W / 2 - (bed.x + bW / 2) * targetZoom;
+    const targetY = H / 2 - (bed.y + bH / 2) * targetZoom;
+
+    this._animateCameraTo(targetZoom, targetX, targetY, 350, () => {
+      this.render();
+    });
+
+    bus.emit('focus:entered', bed);
+  }
+
+  /**
+   * Beendet den Fokus-Modus und kehrt zur Übersicht zurück.
+   */
+  exitFocus() {
+    if (!this.focusBedId) return;
+    this.focusBedId = null;
+    this.fitAll(60);
+    bus.emit('focus:exited');
+  }
+
+  /**
+   * Animiert Zoom + Offset flüssig zum Ziel (Ease-Out).
+   */
+  _animateCameraTo(targetZoom, targetX, targetY, durationMs, onDone) {
+    if (this._focusAnim) cancelAnimationFrame(this._focusAnim);
+    const startZoom = this.zoom;
+    const startX    = this.offsetX;
+    const startY    = this.offsetY;
+    const startTime = performance.now();
+
+    const step = (now) => {
+      const t  = Math.min((now - startTime) / durationMs, 1);
+      const e  = 1 - Math.pow(1 - t, 3); // ease-out cubic
+
+      this.zoom    = startZoom + (targetZoom - startZoom) * e;
+      this.offsetX = startX    + (targetX    - startX)    * e;
+      this.offsetY = startY    + (targetY    - startY)    * e;
+      this._draw();
+
+      if (t < 1) {
+        this._focusAnim = requestAnimationFrame(step);
+      } else {
+        this._focusAnim = null;
+        if (onDone) onDone();
+      }
+    };
+    this._focusAnim = requestAnimationFrame(step);
   }
 
   setOffset(x, y) {
@@ -160,7 +237,8 @@ export class CanvasRenderer {
     const bgCtx = this.bgCanvas.getContext('2d');
     this._drawGardenArea(bgCtx, garden);
 
-    if (this.showGrid) {
+    // In focus mode always show grid to help with plant spacing
+    if (this.showGrid || this.focusBedId) {
       this._drawGrid(bgCtx, garden);
     }
 
@@ -306,6 +384,11 @@ export class CanvasRenderer {
     const isLine      = (bed.type === 'polygon' || bed.type === 'line') && !bed.isClosed;
 
     ctx.save();
+
+    // ── Dimming (Fokus-Modus) ──────────────────────────────────────
+    if (this.focusBedId && bed.id !== this.focusBedId) {
+      ctx.globalAlpha = 0.22;
+    }
 
     // ── Shadow (sun simulation or drag lift) ───────────────────────
     if (isDragging) {

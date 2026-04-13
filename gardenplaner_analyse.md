@@ -1,10 +1,25 @@
-# GardenPlaner – Feature-Dokumentation & Analyse
+# GardenPlaner – Feature-Dokumentation & Analyse (v2 – Stand April 2026)
 
 ## Projektübersicht
 
 **GardenPlaner** ist eine intelligente Komplettlösung für die digitale Gartenplanung. Die App richtet sich an Hobby-Gärtner, Selbstversorger, Balkon-Gärtner und Schrebergärtner. Sie läuft vollständig lokal ohne Cloud-Zwang oder Account-Registrierung.
 
 **Tech-Stack:** Vanilla JavaScript, HTML/CSS, lokaler Express.js-Server, Canvas-basiertes Rendering, Open-Meteo API (kostenlos, kein API-Key nötig)
+
+**Aktueller Funktionsumfang:** 13 Hauptfeaturebereiche
+
+---
+
+## Änderungen gegenüber v1
+
+| Bereich | v1 | v2 |
+|---|---|---|
+| Anzahl Features | 12 | **13** |
+| Pflanzen in Datenbank | 68 | **78** |
+| Neues Feature | – | 📚 Pflanzen-Bibliothek & Eigene Pflanzen |
+| Feature-Nummerierung | 1–12 | 1–13 (ab #3 verschoben) |
+
+**Neu in v2 (Highlight):** Nutzer können jetzt eigene Pflanzen anlegen, System-Pflanzen überschreiben und von einem hybriden Katalog profitieren, der eigene und System-Pflanzen nahtlos vereint.
 
 ---
 
@@ -25,7 +40,7 @@ Der Editor ist das Herzstück der App und ermöglicht präzises visuelles Planen
 
 Eine eingebaute Botanik-Datenbank verhindert schlechte Nachbarschaften und optimiert Erträge.
 
-- **68+ Pflanzen:** Gemüse, Kräuter, Obst, Blumen – jeweils mit:
+- **78 Pflanzen** *(v2: +10 gegenüber v1)* – Gemüse, Kräuter, Obst, Blumen, jeweils mit:
   - Guten und schlechten Nachbarn
   - Nährstoffbedarf (Starkzehrer/Schwachzehrer)
   - Pflanzabstand (cm)
@@ -38,7 +53,23 @@ Eine eingebaute Botanik-Datenbank verhindert schlechte Nachbarschaften und optim
 
 ---
 
-## Feature 3: Dynamische Schatten- & Sonnen-Simulation
+## Feature 3: Pflanzen-Bibliothek & Eigene Pflanzen (Katalog) ⭐ NEU in v2
+
+Dein personalisiertes Garten-Lexikon direkt in der App – das Herzstück der Erweiterung in v2.
+
+- **System-Katalog:** 78 fundierte Garten-Pflanzen (Gemüse, Obst, Kräuter, Blumen) abrufbar
+- **Eigene Pflanzen anlegen:** Erstelle völlig neue Sorten mit vollständig eigenen Werten:
+  - Pflanzabstand
+  - Erntedauer
+  - Gieß-/Düngeintervall
+  - Nährstoffbedarf
+  - Nachbarschaftsregeln (gut/schlecht)
+- **Hybrides System:** Eigene Pflanzen verhalten sich in der gesamten App zu 100% wie System-Pflanzen – inkl. Fruchtfolge-Warnungen, Autocomplete im Beet-Editor u.v.m.
+- **System-Pflanzen überschreiben:** Nicht zufrieden mit Standard-Vorgaben? Bearbeite sie – die App überschreibt sie virtuell mit deinen Werten, das Original bleibt als Fallback erhalten.
+
+---
+
+## Feature 4: Dynamische Schatten- & Sonnen-Simulation
 
 Physikalisch korrekter Schattenwurf für optimale Pflanzenplatzierung.
 
@@ -49,7 +80,7 @@ Physikalisch korrekter Schattenwurf für optimale Pflanzenplatzierung.
 
 ---
 
-## Feature 4: Zentrale Leitzentrale (Dashboard)
+## Feature 5: Zentrale Leitzentrale (Dashboard)
 
 Alle wichtigen Garten-Informationen auf einen Blick.
 
@@ -63,7 +94,7 @@ Alle wichtigen Garten-Informationen auf einen Blick.
 
 ---
 
-## Feature 5: Finanz- & Budgetverwaltung
+## Feature 6: Finanz- & Budgetverwaltung
 
 Transparenz über alle Gartenkosten.
 
@@ -73,7 +104,7 @@ Transparenz über alle Gartenkosten.
 
 ---
 
-## Feature 6: Aufgaben & Intelligenter Gieß-/Dünge-Kalender
+## Feature 7: Aufgaben & Intelligenter Gieß-/Dünge-Kalender
 
 Das integrierte Gedächtnis des Gartens – wetter-intelligent.
 
@@ -91,7 +122,7 @@ Das integrierte Gedächtnis des Gartens – wetter-intelligent.
 
 ---
 
-## Feature 7: Jahreskalender & Gantt-Diagramm
+## Feature 8: Jahreskalender & Gantt-Diagramm
 
 Saisonale Übersicht für die Gesamtplanung.
 
@@ -104,7 +135,7 @@ Saisonale Übersicht für die Gesamtplanung.
 
 ---
 
-## Feature 8: Höhenebenen (Z-Achse)
+## Feature 9: Höhenebenen (Z-Achse)
 
 Realistische Darstellung von Hanglagen und mehrstöckigen Konstruktionen.
 
@@ -114,7 +145,7 @@ Realistische Darstellung von Hanglagen und mehrstöckigen Konstruktionen.
 
 ---
 
-## Feature 9: Wachstums- & Fotoarchiv
+## Feature 10: Wachstums- & Fotoarchiv
 
 Visuelle Dokumentation des Gartenerfolgs.
 
@@ -123,7 +154,7 @@ Visuelle Dokumentation des Gartenerfolgs.
 
 ---
 
-## Feature 10: Multi-Garten-Verwaltung
+## Feature 11: Multi-Garten-Verwaltung
 
 Verwaltung mehrerer Projekte in einer App.
 
@@ -133,7 +164,7 @@ Verwaltung mehrerer Projekte in einer App.
 
 ---
 
-## Feature 11: Farbdesign & Themes
+## Feature 12: Farbdesign & Themes
 
 Personalisierung der Benutzeroberfläche.
 
@@ -149,7 +180,7 @@ Personalisierung der Benutzeroberfläche.
 
 ---
 
-## Feature 12: Lokale Datensicherung & Offline-Betrieb
+## Feature 13: Lokale Datensicherung & Offline-Betrieb
 
 Vollständige Datensouveränität – keine Cloud, kein Konto.
 
@@ -164,13 +195,16 @@ Vollständige Datensouveränität – keine Cloud, kein Konto.
 
 ## Zusammenfassung
 
-GardenPlaner vereint in einer einzigen lokalen App:
-- Visuellen Editor (2D + 3D)
-- Botanisches Wissen (68+ Pflanzen, Kompatibilitätsprüfung)
-- Wetter-Integration (Open-Meteo, kein Key)
-- Aufgaben- und Kalender-Management mit Niederschlags-Intelligenz
-- Ernte-Protokollierung und Fruchtfolge-Planung
-- Finanz-Tracking
-- Fotoarchiv und Multi-Garten-Support
+GardenPlaner vereint in einer einzigen lokalen App (Stand v2, April 2026):
 
-Die App ist ideal für Selbstversorger und Hobby-Gärtner, die eine datenschutzfreundliche, vollständig offline nutzbare Lösung suchen.
+| Kategorie | Details |
+|---|---|
+| Features gesamt | 13 |
+| Pflanzen in Datenbank | 78 (inkl. anpassbarer System-Pflanzen) |
+| Eigene Pflanzen | unbegrenzt anlegbar |
+| Wetter-API | Open-Meteo (kostenlos, kein Key) |
+| Datenspeicherung | Lokal (JSON + localStorage) |
+| Cloud-Pflicht | Keine |
+| Plattform | Windows (Electron-ähnlich via Express.js) |
+
+Die App ist ideal für Selbstversorger und Hobby-Gärtner, die eine datenschutzfreundliche, vollständig offline nutzbare Lösung suchen und dabei auf den Komfort einer intelligenten, wetter-vernetzten Planungssoftware nicht verzichten wollen.

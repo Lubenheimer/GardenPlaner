@@ -128,8 +128,63 @@ Features die die App im Alltag über die Saison relevant halten:
    Aufgeteilt in „Heute fällig" (optisch hervorgehoben) und „Demnächst" (nächste 3 Tage).
    Zusätzliche Pflege-Intervall-Übersicht als Karten-Grid pro Beet mit kompakten Badges.
 
-6. **Saison-Archiv**
-   Aktuellen Gartenstatus eines Jahres „einfrieren" (Read-only-Kopie) um Vorjahres-Bepflanzung als Referenz zu behalten.
+6. **Saison-System & Archiv** — KONZEPT (Entscheidung offen)
+
+   ### Das Problem mit dem klassischen "Einfrieren"
+   Ein manueller Snapshot ist fehleranfällig: Man vergisst ihn, macht ihn zu früh/spät,
+   und Korrekturen danach machen ihn inkonsistent. Zudem ist unklar, was bei nachträglichen
+   Änderungen passieren soll.
+
+   ### Lösungsansätze im Vergleich
+
+   #### Option A — Jahres-Filter in der Statistik (Minimal, sofort umsetzbar)
+   **Idee:** Kein eigentliches Archiv. Die vorhandenen Timestamps (`datePlanted`, `dateHarvest`,
+   `date` bei Ausgaben) werden genutzt, um in der Statistik-Ansicht ein Jahres-Dropdown
+   (`2024 · 2025 · 2026`) anzubieten. Charts und Tabellen filtern sich automatisch.
+   
+   - ✅ Kein manueller Aufwand, läuft von selbst
+   - ✅ Keine neuen Datenstrukturen nötig
+   - ✅ Voraussetzung für alle anderen Optionen
+   - ⚠️ Zeigt nur Daten, die schon timestamped sind (kein Beet-Layout-Verlauf)
+   - **Umsetzung:** `Statistics.js` um Jahres-Dropdown erweitern, alle Filter auf `year` anwenden.
+
+   #### Option B — Saison-System mit weichem Jahreswechsel (Empfohlen ⭐)
+   **Idee:** Pflanzungen bekommen ein `season`-Feld (z.B. `"2025"`). Im Frühjahr kann der 
+   Nutzer auf **"Neue Saison starten"** klicken. Die App:
+   1. Archiviert alle erledigten Pflanzungen der Vorjahres-Saison (Status → `archived`)
+   2. Löscht "planned"-Pflanzungen oder fragt den Nutzer
+   3. Setzt den Garten-Canvas für die neue Saison zurück (optional)
+   
+   Die alte Saison bleibt vollständig erhalten und ist im Statistik-Tab unter dem jeweiligen
+   Jahr aufrufbar. Das Beet-Layout bleibt identisch (Beete selbst ändern sich selten).
+   
+   - ✅ Halbautomatisch — ein Klick, kein Vergessen
+   - ✅ Kein Datenverlust, alles bleibt im Store
+   - ✅ Vergleich Vorjahr vs. aktuell wird möglich
+   - ✅ Passt natürlich zu echten Gärtner-Rhythmen (Frühjahrsbeginn)
+   - ⚠️ Beet-Layout-Änderungen (z.B. neues Hochbeet) werden nicht historisiert
+   - **Store-Erweiterung:** `planting.season = "2025"`, `store.startNewSeason(year)` CRUD-Methode
+   - **UI:** Button im Dashboard oder Setup: "Neue Gartensaison 2026 starten"
+
+   #### Option C — Automatische Hintergrund-Snapshots (Vollautomatisch, höchster Aufwand)
+   **Idee:** Der Store speichert automatisch periodisch (z.B. wöchentlich, oder bei großen
+   Änderungen wie "erste Ernte der Saison") einen vollständigen Zustand des aktiven Gartens
+   als komprimierten JSON-Snapshot in einem separaten `snapshots[]`-Array.
+   Ähnlich wie Git-Commits im Hintergrund — der Nutzer merkt nichts, hat aber jederzeit
+   Zugriff auf vergangene Zustände.
+   
+   - ✅ Komplett wartungsfrei, null manueller Aufwand
+   - ✅ Auch Beet-Layout-Änderungen werden historisiert
+   - ✅ Ermöglicht echtes "Zeitreise"-Feature
+   - ⚠️ Speicherplatz wächst über die Zeit (Snapshots müssen komprimiert / rotiert werden)
+   - ⚠️ Deutlich mehr Implementierungsaufwand
+   - **Store-Erweiterung:** `snapshots: [{ date, label, gardenState }]`, auto-trigger-Logik,
+     Snapshot-Viewer-UI in Statistik oder Setup
+
+   ### Vorgeschlagene Kombination
+   **A + B:** Option A (Jahres-Filter) als sofortige Quick-Win-Umsetzung, kombiniert mit
+   Option B (Saison-Button) als das eigentliche Feature für den Frühjahrs-Workflow.
+   Option C als spätere Erweiterung wenn der interne Server zur Cloud-DB wird.
 
 7. **Aussaat-Erinnerungen**
    Push-Notifications oder Dashboard-Hinweis: „In 2 Wochen ist ideale Aussaatzeit für Tomaten (laut Standort & Gantt)".

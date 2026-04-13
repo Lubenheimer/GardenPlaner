@@ -17,6 +17,7 @@ import { renderTasks } from './components/Tasks.js';
 import { showPlantingModal } from './components/PlantingModal.js';
 import { renderSetup } from './components/SettingsManager.js';
 import { renderCatalog } from './components/Catalog.js';
+import { renderStatistics } from './components/Statistics.js';
 import { showGardenManager } from './components/GardenManager.js';
 import { bedColors } from './utils/helpers.js';
 
@@ -143,6 +144,7 @@ function renderCurrentView() {
     case 'tasks': renderTasks(); break;
     case 'setup': renderSetup(); break;
     case 'catalog': renderCatalog(); break;
+    case 'statistics': renderStatistics(); break;
   }
 }
 
@@ -464,6 +466,21 @@ function initEvents() {
     document.getElementById(`tool-${tool}`)?.classList.add('active');
   });
 
+  // Focus mode: show/hide floating exit button
+  bus.on('focus:entered', (bed) => {
+    const btn = document.getElementById('focus-exit-btn');
+    if (btn) {
+      btn.classList.remove('hidden');
+      // Clicking the exit button exits focus
+      btn.onclick = () => renderer.exitFocus();
+    }
+  });
+
+  bus.on('focus:exited', () => {
+    const btn = document.getElementById('focus-exit-btn');
+    if (btn) btn.classList.add('hidden');
+  });
+
   // Keyboard
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -511,6 +528,11 @@ function initEvents() {
     }
 
     if (e.key === 'Escape') {
+      // Exit focus mode first if active
+      if (renderer.focusBedId) {
+        renderer.exitFocus();
+        return;
+      }
       renderer.selectedBedId = null;
       closeRightPanel();
       interaction.setTool('select');
