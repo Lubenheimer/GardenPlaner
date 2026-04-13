@@ -1,4 +1,4 @@
-# GardenPlaner – Feature-Dokumentation & Analyse (v2 – Stand April 2026)
+# GardenPlaner – Feature-Dokumentation & Analyse (v3 – Stand April 2026)
 
 ## Projektübersicht
 
@@ -6,20 +6,21 @@
 
 **Tech-Stack:** Vanilla JavaScript, HTML/CSS, lokaler Express.js-Server, Canvas-basiertes Rendering, Open-Meteo API (kostenlos, kein API-Key nötig)
 
-**Aktueller Funktionsumfang:** 13 Hauptfeaturebereiche
+**Aktueller Funktionsumfang:** 15 Features
 
 ---
 
-## Änderungen gegenüber v1
+## Änderungshistorie
 
-| Bereich | v1 | v2 |
-|---|---|---|
-| Anzahl Features | 12 | **13** |
-| Pflanzen in Datenbank | 68 | **78** |
-| Neues Feature | – | 📚 Pflanzen-Bibliothek & Eigene Pflanzen |
-| Feature-Nummerierung | 1–12 | 1–13 (ab #3 verschoben) |
+| Version | Features | Pflanzendatenbank | Wichtigste Neuerung |
+|---|---|---|---|
+| v1 | 12 | 68 Pflanzen | Basis-Release |
+| v2 | 13 | 78 Pflanzen | Pflanzen-Bibliothek & Eigene Pflanzen |
+| **v3** | **15** | **78 Pflanzen** | **Jahresstatistik + Drucken/PDF-Export** |
 
-**Neu in v2 (Highlight):** Nutzer können jetzt eigene Pflanzen anlegen, System-Pflanzen überschreiben und von einem hybriden Katalog profitieren, der eigene und System-Pflanzen nahtlos vereint.
+**Neu in v3:**
+- 📊 Feature 9: Jahresstatistik mit KPI-Kacheln, Diagrammen und Auswertungen
+- 🖨️ Feature 10: Drucken & PDF-Export des Gartenplans
 
 ---
 
@@ -28,7 +29,7 @@
 Der Editor ist das Herzstück der App und ermöglicht präzises visuelles Planen.
 
 - **Freie Formgestaltung:** Beete, Rasenflächen, Pflastersteine oder Zäune als Rechteck, Kreis, L-Form oder individuelles Polygon
-- **Präzisionswerkzeuge:** Integriertes Mess-Werkzeug (Lineal) und ein- /abschaltbares Raster (Grid)
+- **Präzisionswerkzeuge:** Integriertes Mess-Werkzeug (Lineal) und ein-/abschaltbares Raster (Grid)
 - **Echtzeit 3D-Ansicht:** Per Knopfdruck in Pseudo-3D-Ansicht wechseln für räumlichen Eindruck
 - **Rechtsklick-Kontextmenü:** Schnellzugriff auf Pflanzung hinzufügen, Umbenennen, Duplizieren, Ebene wechseln, Löschen
 - **Lesbare Beschriftungen:** Objektnamen und Pflanzen-Emojis bleiben horizontal ausgerichtet, auch bei Rotation
@@ -40,7 +41,7 @@ Der Editor ist das Herzstück der App und ermöglicht präzises visuelles Planen
 
 Eine eingebaute Botanik-Datenbank verhindert schlechte Nachbarschaften und optimiert Erträge.
 
-- **78 Pflanzen** *(v2: +10 gegenüber v1)* – Gemüse, Kräuter, Obst, Blumen, jeweils mit:
+- **68+ Pflanzen** – Gemüse, Kräuter, Obst, Blumen, jeweils mit:
   - Guten und schlechten Nachbarn
   - Nährstoffbedarf (Starkzehrer/Schwachzehrer)
   - Pflanzabstand (cm)
@@ -53,17 +54,13 @@ Eine eingebaute Botanik-Datenbank verhindert schlechte Nachbarschaften und optim
 
 ---
 
-## Feature 3: Pflanzen-Bibliothek & Eigene Pflanzen (Katalog) ⭐ NEU in v2
+## Feature 3: Pflanzen-Bibliothek & Eigene Pflanzen (Katalog)
 
-Dein personalisiertes Garten-Lexikon direkt in der App – das Herzstück der Erweiterung in v2.
+Dein personalisiertes Garten-Lexikon direkt in der App.
 
 - **System-Katalog:** 78 fundierte Garten-Pflanzen (Gemüse, Obst, Kräuter, Blumen) abrufbar
 - **Eigene Pflanzen anlegen:** Erstelle völlig neue Sorten mit vollständig eigenen Werten:
-  - Pflanzabstand
-  - Erntedauer
-  - Gieß-/Düngeintervall
-  - Nährstoffbedarf
-  - Nachbarschaftsregeln (gut/schlecht)
+  - Pflanzabstand, Erntedauer, Gieß-/Düngeintervall, Nährstoffbedarf, Nachbarschaftsregeln
 - **Hybrides System:** Eigene Pflanzen verhalten sich in der gesamten App zu 100% wie System-Pflanzen – inkl. Fruchtfolge-Warnungen, Autocomplete im Beet-Editor u.v.m.
 - **System-Pflanzen überschreiben:** Nicht zufrieden mit Standard-Vorgaben? Bearbeite sie – die App überschreibt sie virtuell mit deinen Werten, das Original bleibt als Fallback erhalten.
 
@@ -74,7 +71,7 @@ Dein personalisiertes Garten-Lexikon direkt in der App – das Herzstück der Er
 Physikalisch korrekter Schattenwurf für optimale Pflanzenplatzierung.
 
 - **Echter Schattenwurf:** Nordausrichtung definierbar, daraus physikalisch korrekte Schattenberechnung
-- **Zeitsteuerung:** Slider für Tageszeit (8:00–20:00 Uhr) und Monat (Januar–Dezember) zum Durchspielen verschiedener Szenarien
+- **Zeitsteuerung:** Slider für Tageszeit (8:00–20:00 Uhr) und Monat (Januar–Dezember)
 - **Standort-Warnung:** Alarm bei Platzierung von Sonnenpflanzen in Schattenbereichen
 - **Toggle:** Objekte können vom Schattenwurf ausgenommen werden
 
@@ -85,10 +82,10 @@ Physikalisch korrekter Schattenwurf für optimale Pflanzenplatzierung.
 Alle wichtigen Garten-Informationen auf einen Blick.
 
 - **Flächen-Statistik:** Gesamtanzahl Beete, exakte Pflanzflächen in m²
-- **Wetter-Widget:** 7-Tage-Vorhersage über Open-Meteo (kein API-Key), inkl. Frost-Warnung bei Nachttemperaturen < 2 °C
+- **Wetter-Widget:** 7-Tage-Vorhersage über Open-Meteo (kein API-Key), inkl. Frost-Warnung bei < 2 °C
 - **Saisonale Vorschläge:** Welche Pflanzen jetzt aussäen oder ernten
 - **Ernte-Protokoll:** Erfassung von Erntemenge (kg/Stück/Bund/l), Datum, Notizen; Aggregation nach Pflanze
-- **Fruchtfolge-Assistent:** Proaktive Empfehlungen nach Saison – Zyklus: Starkzehrer → Mittelzehrer → Schwachzehrer → Gründüngung, mit konkreten Pflanzvorschlägen
+- **Fruchtfolge-Assistent:** Zyklus Starkzehrer → Mittelzehrer → Schwachzehrer → Gründüngung
 - **Status-Tracking:** „Geplant", „Gepflanzt", „Im Wachstum", „Erntebereit"
 - **Aufgaben-Alert:** Roter Banner bei überfälligen Tasks
 
@@ -108,17 +105,13 @@ Transparenz über alle Gartenkosten.
 
 Das integrierte Gedächtnis des Gartens – wetter-intelligent.
 
-- **Aufgaben-Verwaltung:** Checklisten mit Deadlines (z.B. „Hecke schneiden", „Teichfilter reinigen")
-- **Automatische Erinnerungen:** Basierend auf Pflegeintervallen – Aufgabenansicht zeigt „Heute fällig" und „Demnächst" (nächste 3 Tage)
-- **Niederschlags-Integration:**
-  - Stündliche Regendaten der letzten 24h und nächsten 48h (Open-Meteo)
-  - Ausreichend Regen → Gieß-Task automatisch als „Durch Regen erledigt" markiert und durchgestrichen
-- **Pflanztyp-spezifische Schwellenwerte:**
-  - Dürretolerant (Rosmarin, Thymian, 7+ Tage Rhythmus): ab 3mm als versorgt
-  - Wasserintensiv (Tomate, Gurke): 8mm für vollständige Deckung
-- **Niederschlags-Banner:** Kompaktinfos zu gestriger Nacht, heutiger Nacht, nächsten 24h; Staunässe-Warnung bei > 15mm
-- **Pflege-Intervall-Übersicht:** Kacheln pro Beet mit Gieß- (💧 2d) und Dünge-Badges (🧪 2w)
-- **Automatische Einkaufslisten:** Geplante Pflanzen erscheinen als Erinnerungs-Block auf dem Dashboard
+- **Aufgaben-Verwaltung:** Checklisten mit Deadlines
+- **Automatische Erinnerungen:** „Heute fällig" und „Demnächst" (nächste 3 Tage)
+- **Niederschlags-Integration:** Open-Meteo stündlich; ausreichend Regen → Task automatisch als „Durch Regen erledigt"
+- **Pflanztyp-spezifische Schwellenwerte:** Dürretolerant ab 3mm, wasserintensiv ab 8mm
+- **Niederschlags-Banner:** inkl. Staunässe-Warnung bei > 15mm
+- **Pflege-Intervall-Übersicht:** Kacheln pro Beet mit 💧 und 🧪 Badges
+- **Automatische Einkaufslisten:** Geplante Pflanzen erscheinen als Erinnerungs-Block
 
 ---
 
@@ -127,15 +120,39 @@ Das integrierte Gedächtnis des Gartens – wetter-intelligent.
 Saisonale Übersicht für die Gesamtplanung.
 
 - **Zwei Ansichten:** Klassischer Monatskalender und Gantt-Diagramm
-- **Gantt-Phasenbalken:**
-  - 🔵 Säen
-  - 🟤 Wachsen
-  - 🟢 Ernte
+- **Gantt-Phasenbalken:** 🔵 Säen · 🟤 Wachsen · 🟢 Ernte
 - **Beet-Gruppierung:** Pflanzen nach Beet geordnet, aktueller Monat hervorgehoben
 
 ---
 
-## Feature 9: Höhenebenen (Z-Achse)
+## Feature 9: Jahresstatistik ⭐ NEU in v3
+
+Dein Garten auf einen Blick – Ernte, Kosten, Aufgaben als vollständiges Auswertungs-Dashboard.
+
+- **KPI-Kacheln:** Sofort-Überblick über Beete, Pflanzungen, Ernten, Ausgaben und Aufgaben-Fortschritt
+- **Ernte-Ranking:** Horizontales Balkendiagramm mit allen Sorten, sortiert nach Gesamtmenge
+- **Ausgaben nach Monat:** Säulendiagramm aller Ausgaben über das Jahr (12 Monate)
+- **Ausgaben nach Kategorie:** Horizontale Balken für Saatgut, Erde/Dünger, Werkzeug, Sonstiges
+- **Pflanzungs-Status:** Kacheln nach Status (Geplant / Gesetzt / Wachsend / Ernte)
+- **Pflanzarten-Verteilung:** Aufschlüsselung aller Pflanzungen nach Gemüse / Kräuter / Obst / Blumen
+- **Aufgaben-Fortschritt:** Großer Fortschrittsbalken mit Prozentzahl (erledigt vs. offen)
+
+---
+
+## Feature 10: Drucken & PDF-Export ⭐ NEU in v3
+
+Den Gartenplan professionell auf Papier bringen.
+
+- **Drucken / als PDF speichern:** Ein Klick öffnet ein vollständiges, formatiertes Drucklayout
+- **Canvas-Snapshot:** Der aktuelle Gartenplan wird als Bildvorschau oben auf der Seite eingebettet
+- **Vollständige Pflanzliste:** Alle Beete mit Pflanzungen, Sorte, Anzahl, Datum und erwartetem Erntetermin
+- **Ernte-Protokoll:** Detaillierte Auflistung aller erfassten Ernten mit Menge und Notizen
+- **Ausgaben-Aufstellung:** Vollständige Kostenübersicht inkl. Gesamtbetrag
+- **Sauberes Layout (A4):** Optimiert für DIN A4 mit strukturierten Tabellen und Farbcodierung
+
+---
+
+## Feature 11: Höhenebenen (Z-Achse)
 
 Realistische Darstellung von Hanglagen und mehrstöckigen Konstruktionen.
 
@@ -145,7 +162,7 @@ Realistische Darstellung von Hanglagen und mehrstöckigen Konstruktionen.
 
 ---
 
-## Feature 10: Wachstums- & Fotoarchiv
+## Feature 12: Wachstums- & Fotoarchiv
 
 Visuelle Dokumentation des Gartenerfolgs.
 
@@ -154,57 +171,47 @@ Visuelle Dokumentation des Gartenerfolgs.
 
 ---
 
-## Feature 11: Multi-Garten-Verwaltung
+## Feature 13: Multi-Garten-Verwaltung
 
 Verwaltung mehrerer Projekte in einer App.
 
 - **Mehrere Gärten:** Erstellen, benennen, zwischen Projekten wechseln, löschen
 - **Typische Projekte:** Hausgarten, Balkon, Schrebergarten
-- **Automatische Migration:** Bestehende Einzelgarten-Daten werden beim Start automatisch ins neue Format überführt
+- **Automatische Migration:** Bestehende Einzelgarten-Daten werden automatisch ins neue Format überführt
 
 ---
 
-## Feature 12: Farbdesign & Themes
+## Feature 14: Farbdesign & Themes
 
 Personalisierung der Benutzeroberfläche.
 
-- **5 kuratierte Themes:**
-  - 🏺 Terracotta (Standard)
-  - 🌲 Forest
-  - 🌊 Ocean
-  - 🌾 Harvest
-  - 🌑 Midnight
+- **5 kuratierte Themes:** 🏺 Terracotta · 🌲 Forest · 🌊 Ocean · 🌾 Harvest · 🌑 Midnight
 - **Je Light- & Dark-Variante:** Insgesamt 10 Erscheinungsbilder
 - **Sofortvorschau:** Visuelle Kacheln mit Farbswatch, kein Neustart nötig
 - **Persistenz:** Gewähltes Theme bleibt über Neustarts hinweg erhalten
 
 ---
 
-## Feature 13: Lokale Datensicherung & Offline-Betrieb
+## Feature 15: Lokale Datensicherung & Offline-Betrieb
 
 Vollständige Datensouveränität – keine Cloud, kein Konto.
 
 - **Lokaler Express-Server:** Schreibt alle Daten in lokale JSON-Datei
-- **Dual-Write-Strategie:**
-  - Sofort-Sicherung in localStorage (Cache/Offline-Fallback)
-  - Debounced Server-Push für dauerhafte Persistenz
-- **Server-Status-Indikator:** Farbpunkt zeigt Verbindungsstatus (grün = lokal DB aktiv, grau = nur Browser-Speicher)
-- **Windows-Start:** Doppelklick auf `Start GartenPlaner.bat` startet Server und Browser automatisch
+- **Dual-Write-Strategie:** Sofort-Sicherung in localStorage + Debounced Server-Push
+- **Server-Status-Indikator:** Farbpunkt (grün = lokal DB aktiv, grau = nur Browser-Speicher)
+- **Windows-Start:** Doppelklick auf `Start GartenPlaner.bat` startet Server und Browser
 
 ---
 
 ## Zusammenfassung
 
-GardenPlaner vereint in einer einzigen lokalen App (Stand v2, April 2026):
-
 | Kategorie | Details |
 |---|---|
-| Features gesamt | 13 |
+| Features gesamt | **15** |
 | Pflanzen in Datenbank | 78 (inkl. anpassbarer System-Pflanzen) |
 | Eigene Pflanzen | unbegrenzt anlegbar |
+| Statistik & Export | Jahresstatistik + PDF/Druck-Export (neu in v3) |
 | Wetter-API | Open-Meteo (kostenlos, kein Key) |
 | Datenspeicherung | Lokal (JSON + localStorage) |
 | Cloud-Pflicht | Keine |
-| Plattform | Windows (Electron-ähnlich via Express.js) |
-
-Die App ist ideal für Selbstversorger und Hobby-Gärtner, die eine datenschutzfreundliche, vollständig offline nutzbare Lösung suchen und dabei auf den Komfort einer intelligenten, wetter-vernetzten Planungssoftware nicht verzichten wollen.
+| Plattform | Windows (Express.js + Browser) |

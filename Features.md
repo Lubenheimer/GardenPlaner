@@ -86,26 +86,32 @@ Den Gartenplan professionell auf Papier bringen.
 - **Ausgaben-Aufstellung:** Vollständige Kostenübersicht inkl. Gesamtbetrag.
 - **Saubers Layout (A4):** Optimiert für DIN A4 mit klar strukturierten Tabellen und Farbcodierung.
 
-### 🏔️ 11. Höhenebenen (Z-Achse)
+### 🗄️ 11. Saison-System & Archiv
+Gieß dein Wissen nicht weg — nimm es mit ins nächste Jahr.
+- **Weicher Jahreswechsel:** Im Frühjahr startest du mit einem Klick in die neue Saison. Alle erledigten Pflanzungen werden archiviert, dein Beet-Layout bleibt bestehen.
+- **Archiv-Ansicht:** Die Statistik lässt sich jederzeit per Dropdown auf vergangene Jahre filtern.
+- **Völlig ohne Datenverlust:** Deine Pflanz-Historie bleibt für immer im Store abrufbar.
+
+### 🏔️ 12. Höhenebenen (Z-Achse)
 Realistische Umsetzung von Hanglagen oder Konstruktionen.
 - **Mehrstufige Architektur:** Erschaffe nicht nur flache Beete, sondern baue in echten Ebenen („Bodenebene", „Hochbeet", „Terrasse"). Objekte auf höheren Ebenen überlappen andere optisch sauber und werfen größere Distanz-Schatten.
 
-### 📸 12. Wachstums- & Fotoarchiv
+### 📸 13. Wachstums- & Fotoarchiv
 Halte deine Erfolge visuell fest.
 - Lade Fotos direkt in die jeweiligen Beete und die zentrale Foto-Station hoch. So hast du auch in Jahren noch einen visuellen Nachweis, wie üppig deine Tomaten am 15. August aussahen.
 
-### 🌿 11. Multi-Garten-Verwaltung
+### 🌿 14. Multi-Garten-Verwaltung
 Verwalte mehrere Projekte gleichzeitig.
 - **Mehrere Gärten:** Erstelle, benenne, wechsle zwischen und lösche beliebig viele Garten-Projekte — ideal für Hausgarten, Balkon und Schrebergarten in einer App.
 - **Automatische Migration:** Bestehende Einzelgarten-Daten werden beim Start in das neue Format überführt.
 
-### 🎨 12. Farbdesign & Themes
+### 🎨 15. Farbdesign & Themes
 Personalisiere die App nach deinem Geschmack.
 - **5 kuratierte Farbthemes:** Terracotta (Standard), 🌲 Forest, 🌊 Ocean, 🌾 Harvest und 🌑 Midnight — jedes mit abgestimmter Light- und Dark-Variante.
 - **Sofortige Vorschau:** Visuelle Kacheln mit Farbswatch zeigen das Theme direkt — Klick genügt, kein Neustart nötig.
 - **Persistent gespeichert:** Das gewählte Theme bleibt über Neustarts hinweg erhalten.
 
-### 💾 13. Lokale Datensicherung & Offline-Betrieb
+### 💾 16. Lokale Datensicherung & Offline-Betrieb
 Deine Daten gehören dir. Alles bleibt lokal gesichert.
 - **Lokaler Express-Server:** Schreibt alle Daten in eine lokale JSON-Datei — keine Cloud, kein Konto.
 - **Dual-Write:** Sofort-Sicherung in localStorage als Cache, debounced Server-Push für Persistenz.

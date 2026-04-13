@@ -165,6 +165,26 @@ export function renderDashboard() {
     : `<div id="weather-widget-container"><div class="weather-no-location">🌤️ <span>Kein Standort gesetzt — <a id="go-to-settings">Standort in Einstellungen festlegen</a></span></div></div>`;
 
   container.innerHTML = `
+    <!-- Saison-Banner -->
+    ${(() => {
+      const currentSeason = store.getCurrentSeason();
+      const nextSeason = String(parseInt(currentSeason) + 1);
+      const activePlantings = store.getPlantings();
+      return `
+        <div class="dashboard-season-bar animate-in">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">🌱</span>
+            <div>
+              <div style="font-weight:700;font-size:14px">Gartensaison ${currentSeason}</div>
+              <div style="font-size:11px;color:var(--color-text-muted)">${activePlantings.length} aktive Pflanzung${activePlantings.length !== 1 ? 'en' : ''}</div>
+            </div>
+          </div>
+          <button id="btn-new-season" class="btn secondary" style="font-size:12px;padding:6px 14px">
+            🗓️ Neue Saison ${nextSeason} starten
+          </button>
+        </div>`;
+    })()}
+
     <!-- Wetter -->
     ${weatherPlaceholder}
 
@@ -441,7 +461,61 @@ export function renderDashboard() {
       if (n.includes('werkzeug') || n.includes('spaten') || n.includes('schere')) category = 'tools';
       
       store.addExpense({ name, amount, category });
-      renderDashboard(); // Re-render to show new expense
+      renderDashboard();
+    });
+
+    // ── Neue Saison starten ───────────────────────────────────────
+    document.getElementById('btn-new-season')?.addEventListener('click', () => {
+      const currentSeason = store.getCurrentSeason();
+      const nextSeason = String(parseInt(currentSeason) + 1);
+      const planned = store.getPlantings().filter(p => p.status === 'planned');
+
+      // Build modal
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+        z-index:9999;display:flex;align-items:center;justify-content:center;
+      `;
+      overlay.innerHTML = `
+        <div style="
+          background:var(--color-surface);border:1px solid var(--color-border);
+          border-radius:var(--radius-lg);padding:32px;max-width:440px;width:90%;
+          box-shadow:0 24px 64px rgba(0,0,0,0.4);
+        ">
+          <div style="font-size:32px;text-align:center;margin-bottom:12px">🗓️</div>
+          <h2 style="text-align:center;margin-bottom:8px;font-size:18px">Neue Gartensaison ${nextSeason}</h2>
+          <p style="color:var(--color-text-muted);font-size:13px;text-align:center;margin-bottom:24px;line-height:1.5">
+            Alle aktiven Pflanzungen der Saison <strong>${currentSeason}</strong> werden archiviert und bleiben
+            unter Statistik → Saison ${currentSeason} abrufbar. Der Gartenplan (Beete) bleibt unverändert.
+          </p>
+          ${planned.length > 0 ? `
+            <div style="
+              background:var(--color-bg-secondary);border-radius:var(--radius-md);
+              padding:12px 16px;margin-bottom:20px;font-size:13px;
+            ">
+              <strong>⚠️ ${planned.length} geplante Pflanzung${planned.length > 1 ? 'en' : ''}</strong> werden übertragen.<br>
+              <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
+                <input type="checkbox" id="season-delete-planned" style="width:16px;height:16px">
+                <span>Geplante Pflanzungen <strong>löschen</strong> statt archivieren</span>
+              </label>
+            </div>` : ''}
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button id="season-cancel" class="btn secondary">Abbrechen</button>
+            <button id="season-confirm" class="btn primary">
+              🚀 Saison ${nextSeason} starten
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#season-cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#season-confirm').addEventListener('click', () => {
+        const deletePlanned = overlay.querySelector('#season-delete-planned')?.checked || false;
+        store.startNewSeason(nextSeason, deletePlanned);
+        overlay.remove();
+        renderDashboard();
+      });
     });
   }, 0);
 }

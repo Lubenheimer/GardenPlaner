@@ -393,9 +393,36 @@ class Store {
 
   // ── Plantings ──────────────────────────────────────────────────────
 
+  // ── Saison-Helpers ──────────────────────────────────────────────
+
+  /** Returns the current active season year as string, e.g. "2026" */
+  getCurrentSeason() {
+    return this._active().currentSeason || String(new Date().getFullYear());
+  }
+
+  /**
+   * Returns active (non-archived) plantings.
+   * If bedId given, filters to that bed only.
+   */
   getPlantings(bedId) {
     const all = this._active().plantings;
-    return bedId ? all.filter(p => p.bedId === bedId) : all;
+    const active = all.filter(p => !p.archived);
+    return bedId ? active.filter(p => p.bedId === bedId) : active;
+  }
+
+  /** Returns all plantings for a specific season (archived or active) */
+  getPlantingsBySeason(season) {
+    const all = this._active().plantings;
+    return all.filter(p => (p.season || String(new Date().getFullYear())) === String(season));
+  }
+
+  /** Returns all seasons that have any plantings */
+  getAvailableSeasons() {
+    const all = this._active().plantings;
+    const seasons = new Set(all.map(p => p.season || String(new Date().getFullYear())));
+    // Also always include the current year
+    seasons.add(this.getCurrentSeason());
+    return Array.from(seasons).sort((a, b) => b - a); // newest first
   }
 
   addPlanting(planting) {
@@ -413,6 +440,8 @@ class Store {
       variety:             planting.variety || '',
       spacing:             planting.spacing || null,
       notes:               planting.notes || '',
+      season:              planting.season || this.getCurrentSeason(),  // ← Saison-Tag
+      archived:            false,
       createdAt:           new Date().toISOString(),
     };
     this._active().plantings.push(newPlanting);
@@ -420,6 +449,35 @@ class Store {
     bus.emit('plantings:changed', this._active().plantings);
     bus.emit('planting:added', newPlanting);
     return newPlanting;
+  }
+
+  /**
+   * Startet eine neue Gartensaison.
+   * - Alle aktuellen Pflanzungen (egal welcher Status) werden mit `archived: true`
+   *   und dem aktuellen Saison-Jahr markiert.
+   * - `planned`-Pflanzungen werden auf Wunsch des Nutzers gelöscht oder archiviert.
+   * - Der neue Saisonname wird im Garden-Objekt gespeichert.
+   * 
+   * @param {string} newSeason  z.B. '2027'
+   * @param {boolean} deletePlanned  Wenn true, werden 'planned'-Pflanzungen gelöscht statt archiviert
+   */
+  startNewSeason(newSeason, deletePlanned = false) {
+    const active = this._active();
+    const oldSeason = this.getCurrentSeason();
+
+    active.plantings = active.plantings.map(p => {
+      if (p.archived) return p; // already archived from a previous season transition
+      if (p.status === 'planned' && deletePlanned) return null; // mark for deletion
+      return { ...p, archived: true, season: p.season || oldSeason };
+    }).filter(Boolean);
+
+    // Set new season
+    active.currentSeason = String(newSeason);
+
+    this.save();
+    bus.emit('plantings:changed', active.plantings);
+    bus.emit('season:changed', newSeason);
+    return newSeason;
   }
 
   updatePlanting(id, updates) {

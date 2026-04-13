@@ -1,7 +1,3 @@
-/**
- * Statistics.js — Jahresstatistik-Ansicht
- * Zeigt Ernte-, Ausgaben-, Pflanzungs- und Task-Statistiken
- */
 import { store } from '../core/Store.js';
 import { monthNames } from '../data/plants.js';
 
@@ -9,13 +5,38 @@ export function renderStatistics() {
   const container = document.getElementById('statistics-content');
   if (!container) return;
 
+  const currentSeason = store.getCurrentSeason();
+  const availableSeasons = store.getAvailableSeasons();
+
+  // Selected year from previously rendered dropdown, or current season
+  const selectedYear = container.dataset.selectedYear || currentSeason;
+  container.dataset.selectedYear = selectedYear;
+
+  _renderStatisticsForYear(container, selectedYear, availableSeasons, currentSeason);
+}
+
+function _renderStatisticsForYear(container, selectedYear, availableSeasons, currentSeason) {
   const garden   = store.getGarden();
   const beds     = store.getBeds();
-  const plantings= store.getPlantings();
-  const harvests = store.getHarvests ? store.getHarvests() : (store._active?.()?.harvests || []);
-  const expenses = store.getExpenses();
-  const tasks    = store.getTasks();
-  const year     = new Date().getFullYear();
+
+  // Filter ALL plantings (incl. archived) by selected year
+  const plantings = store.getPlantingsBySeason(selectedYear);
+  // Active plantings (non-archived) regardless of year — for status grid
+  const activePlantings = store.getPlantings();
+
+  const harvests = (store.getHarvests ? store.getHarvests() : (store._active?.()?.harvests || []))
+    .filter(h => {
+      const d = h.date ? new Date(h.date) : null;
+      return d && String(d.getFullYear()) === String(selectedYear);
+    });
+
+  const expenses = store.getExpenses()
+    .filter(e => {
+      const d = e.date ? new Date(e.date) : null;
+      return d && String(d.getFullYear()) === String(selectedYear);
+    });
+
+  const tasks = store.getTasks();
 
   // ── Ernte-Auswertung (nach Pflanze aggregiert) ─────────────────
   const harvestByPlant = {};
@@ -63,10 +84,28 @@ export function renderStatistics() {
   const totalTasks     = tasks.length;
 
   // ── Render ─────────────────────────────────────────────────────
+  const isCurrentSeason = String(selectedYear) === String(currentSeason);
   container.innerHTML = `
     <div style="padding: 0 0 60px 0;">
 
-      <!-- Header Row -->
+      <!-- Season Selector Bar -->
+      <div class="stats-season-bar animate-in" style="animation-delay:0s">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-size:13px;color:var(--color-text-muted);font-weight:500">Saison:</span>
+          <div class="stats-season-tabs">
+            ${availableSeasons.map(y => `
+              <button class="stats-season-tab${String(y) === String(selectedYear) ? ' active' : ''}" data-year="${y}">
+                ${y}${String(y) === String(currentSeason) ? ' <span class="stats-season-live">Aktiv</span>' : ''}
+              </button>`).join('')}
+          </div>
+        </div>
+        ${!isCurrentSeason ? `
+          <span style="font-size:12px;color:var(--color-text-muted)">
+            📁 Archiv-Ansicht für Saison ${selectedYear}
+          </span>` : ''}
+      </div>
+
+      <!-- KPI Row -->
       <div class="stats-kpi-row animate-in" style="animation-delay:0.05s">
         ${kpiCard('🌿', 'Beete', beds.length, '')}
         ${kpiCard('🌱', 'Pflanzungen', plantings.length, '')}
@@ -205,6 +244,14 @@ export function renderStatistics() {
 
     </div>
   `;
+
+  // Season tab switching
+  container.querySelectorAll('.stats-season-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.dataset.selectedYear = btn.dataset.year;
+      _renderStatisticsForYear(container, btn.dataset.year, availableSeasons, currentSeason);
+    });
+  });
 
   // Print button
   document.getElementById('btn-print-gardenplan')?.addEventListener('click', printGardenPlan);
