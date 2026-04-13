@@ -126,6 +126,7 @@ function openPlantEditor(existingPlant = null) {
             <option value="Kräuter" ${p.category==='Kräuter'?'selected':''}>Kräuter</option>
             <option value="Obst" ${p.category==='Obst'?'selected':''}>Obst</option>
             <option value="Blumen" ${p.category==='Blumen'?'selected':''}>Blumen</option>
+            <option value="Gründüngung" ${p.category==='Gründüngung'?'selected':''}>Gründüngung</option>
           </select>
         </div>
         <div class="form-group" style="width: 80px;">
