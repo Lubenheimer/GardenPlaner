@@ -165,28 +165,6 @@
           </div>
         </div>
 
-        <!-- Floating Planting Toolbar (hidden by default) -->
-        <div id="planting-toolbar" class="canvas-toolbar hidden" style="position: absolute; top: 70px; left: 50%; transform: translateX(-50%); background: var(--bg-surface); z-index: 100; border: 2px solid var(--color-primary); box-shadow: 0 8px 30px rgba(0,0,0,0.3); padding: 5px; border-radius: 8px;">
-          <div style="padding: 0 10px; font-weight: 600; color: var(--color-primary); font-size: 13px; display: flex; align-items: center;">
-            <span id="planting-mode-label">Pflanzen...</span>
-          </div>
-          <div class="toolbar-group">
-            <button id="tool-plant-point" class="tool-btn active" title="Einzelpflanze">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="4 4" opacity="0.6"/></svg>
-            </button>
-            <button id="tool-plant-line" class="tool-btn" title="Pflanz-Reihe">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="6" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="12" r="2" fill="currentColor"/></svg>
-            </button>
-            <button id="tool-plant-area" class="tool-btn" title="Pflanz-Fläche">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 4"/><circle cx="8" cy="8" r="2" fill="currentColor" opacity="0.5"/><circle cx="16" cy="8" r="2" fill="currentColor" opacity="0.5"/><circle cx="8" cy="16" r="2" fill="currentColor" opacity="0.5"/><circle cx="16" cy="16" r="2" fill="currentColor" opacity="0.5"/></svg>
-            </button>
-          </div>
-          <div class="toolbar-group">
-            <button id="btn-finish-planting" class="tool-btn" style="color: var(--color-success);" title="Fertig">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-            </button>
-          </div>
-        </div>
         <div class="canvas-container">
           <canvas id="garden-canvas"></canvas>
           <div class="environment-controls" style="position: absolute; bottom: 20px; left: 20px; background: var(--bg-surface); padding: 12px; border-radius: 8px; border: var(--glass-border); display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-md); z-index: 10;">

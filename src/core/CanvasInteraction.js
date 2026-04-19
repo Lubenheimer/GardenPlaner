@@ -20,13 +20,7 @@ export class CanvasInteraction {
     this.resizeStartBed = null;
     this.drawStart = null;
     this.enabled = true;
-    
-    // Intra-Bed Planting State
-    this.plantingMode = false;
-    this.editingBedId = null;
-    this.editingPlantingId = null;
-    this.plantingTool = 'point'; // 'point', 'line', 'area'
-    
+
     this.renderer.interaction = this;
 
     this._bindEvents();
@@ -51,46 +45,6 @@ export class CanvasInteraction {
     this.canvas.addEventListener('touchmove', (e) => this._onTouchMove(e), { passive: false });
     this.canvas.addEventListener('touchend', (e) => this._onTouchEnd(e));
 
-    // Planting Mode bindings
-    bus.on('planting:draw', (data) => this.startPlantingMode(data.bedId, data.plantingId));
-
-    document.getElementById('tool-plant-point')?.addEventListener('click', (e) => this._setPlantingTool('point', e.currentTarget));
-    document.getElementById('tool-plant-line')?.addEventListener('click', (e) => this._setPlantingTool('line', e.currentTarget));
-    document.getElementById('tool-plant-area')?.addEventListener('click', (e) => this._setPlantingTool('area', e.currentTarget));
-    document.getElementById('btn-finish-planting')?.addEventListener('click', () => this.stopPlantingMode());
-  }
-
-  _setPlantingTool(tool, element) {
-    this.plantingTool = tool;
-    document.querySelectorAll('#planting-toolbar .tool-btn').forEach(btn => btn.classList.remove('active'));
-    element.classList.add('active');
-  }
-
-  startPlantingMode(bedId, plantingId) {
-    this.plantingMode = true;
-    this.editingBedId = bedId;
-    this.editingPlantingId = plantingId;
-    this.setTool('select'); // Base tool
-    this.renderer.selectedBedId = bedId; // Focus visually
-    
-    const toolbar = document.getElementById('planting-toolbar');
-    if (toolbar) toolbar.classList.remove('hidden');
-
-    const planting = store.getPlantings().find(p => p.id === plantingId);
-    if (planting) {
-      document.getElementById('planting-mode-label').textContent = planting.name + ' pflanzen';
-    }
-  }
-
-  stopPlantingMode() {
-    this.plantingMode = false;
-    this.editingBedId = null;
-    this.editingPlantingId = null;
-    this.isDrawing = false;
-    this.drawStart = null;
-    const toolbar = document.getElementById('planting-toolbar');
-    if (toolbar) toolbar.classList.add('hidden');
-    this.renderer.render();
   }
 
   _getMousePos(e) {
@@ -105,23 +59,6 @@ export class CanvasInteraction {
     if (!this.enabled) return;
     const pos = this._getMousePos(e);
     const world = this.renderer.screenToWorld(pos.x, pos.y);
-
-    if (this.plantingMode && this.editingBedId && this.editingPlantingId) {
-      if (e.button === 1) {
-        // middle click pan allowed
-      } else {
-        if (this.plantingTool === 'point') {
-           this._savePlantingPlacement('point', { x: world.x, y: world.y });
-        } else {
-           this.isDrawing = true;
-           this.drawStart = { x: world.x, y: world.y, type: this.plantingTool };
-           if (this.plantingTool === 'line') {
-             this.polygonPoints = [{ x: world.x, y: world.y }];
-           }
-        }
-        return;
-      }
-    }
 
     // Drawing mode: create new bed
     if (this.tool !== 'select') {
@@ -313,29 +250,6 @@ export class CanvasInteraction {
   _onMouseUp(e) {
     if (!this.enabled) return;
 
-    if (this.plantingMode && this.isDrawing && this.drawStart) {
-      const pos = this._getMousePos(e);
-      const world = this.renderer.screenToWorld(pos.x, pos.y);
-      if (this.drawStart.type === 'line') {
-         this._savePlantingPlacement('line', {
-             p1: { x: this.drawStart.x, y: this.drawStart.y },
-             p2: { x: world.x, y: world.y }
-         });
-      } else if (this.drawStart.type === 'area') {
-         const x = Math.min(this.drawStart.x, world.x);
-         const y = Math.min(this.drawStart.y, world.y);
-         const w = Math.abs(world.x - this.drawStart.x);
-         const h = Math.abs(world.y - this.drawStart.y);
-         if (w > 10 && h > 10) {
-            this._savePlantingPlacement('area', { x, y, w, h });
-         }
-      }
-      this.isDrawing = false;
-      this.drawStart = null;
-      this.renderer.render();
-      return;
-    }
-    
     if (this.isDrawing && (this.tool === 'polygon' || this.tool === 'line')) {
       if (this.polygonPoints && this.polygonPoints.length > 1) {
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -720,50 +634,4 @@ export class CanvasInteraction {
     }
   }
 
-  _savePlantingPlacement(type, geometry) {
-    const bed = store.getBed(this.editingBedId);
-    if (!bed) return;
-    const planting = store.getPlantings().find(p => p.id === this.editingPlantingId);
-    if (!planting) return;
-
-    // Convert world coordinates to bed-relative coordinates
-    // Bed center:
-    const cx = bed.x + bed.width / 2;
-    const cy = bed.y + bed.height / 2;
-    const angleRad = -(bed.rotation || 0) * Math.PI / 180;
-    
-    // Function to rotate a point back by the bed's rotation around its center
-    const unrotate = (px, py) => {
-       const dx = px - cx;
-       const dy = py - cy;
-       return {
-         x: cx + dx * Math.cos(angleRad) - dy * Math.sin(angleRad),
-         y: cy + dx * Math.sin(angleRad) + dy * Math.cos(angleRad)
-       };
-    };
-
-    let locData = { type };
-    if (type === 'point') {
-       const local = unrotate(geometry.x, geometry.y);
-       locData.x = local.x - bed.x;
-       locData.y = local.y - bed.y;
-    } else if (type === 'line') {
-       const l1 = unrotate(geometry.p1.x, geometry.p1.y);
-       const l2 = unrotate(geometry.p2.x, geometry.p2.y);
-       locData.p1 = { x: l1.x - bed.x, y: l1.y - bed.y };
-       locData.p2 = { x: l2.x - bed.x, y: l2.y - bed.y };
-    } else if (type === 'area') {
-       const lt = unrotate(geometry.x, geometry.y);
-       locData.x = lt.x - bed.x;
-       locData.y = lt.y - bed.y;
-       locData.w = geometry.w;
-       locData.h = geometry.h;
-    }
-
-    const placements = planting.placements || [];
-    placements.push(locData);
-    store.updatePlanting(planting.id, { placements });
-    
-    this.renderer.render(); // Redraw immediately to show new placement
-  }
 }

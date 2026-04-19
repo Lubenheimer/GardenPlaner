@@ -149,10 +149,6 @@ export function renderBedEditor(bed) {
                     <div class="planting-name">${p.name}${meta.length > 0 ? ` <span style="font-weight:400;font-size:11px;color:var(--color-text-muted)">${meta.join(' · ')}</span>` : ''}</div>
                     <div class="planting-date">${formatDate(p.datePlanted)}${p.dateHarvestExpected ? ` → ${formatDate(p.dateHarvestExpected)}` : ''}${harvestCount > 0 ? ` · 🧺 ${harvestCount}×` : ''}</div>
                   </div>
-                  <button class="btn btn-sm planting-draw-btn" data-planting-id="${p.id}" data-bed-id="${bed.id}"
-                    title="Im Beet einzeichnen (Punkte, Reihen, Flächen)" style="padding: 2px 6px; font-size: 11px; min-width: 0;">
-                    ✏️
-                  </button>
                   <button class="btn btn-sm planting-harvest-btn" data-planting-id="${p.id}" data-bed-id="${bed.id}"
                     title="Ernte erfassen" style="padding: 2px 6px; font-size: 11px; min-width: 0;">
                     🧺
@@ -350,16 +346,6 @@ export function bindBedEditorEvents(bedId, handlers) {
   document.querySelectorAll('.planting-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       store.deletePlanting(btn.dataset.plantingId);
-    });
-  });
-
-  // Draw planting (Intra-Bed Positioning)
-  document.querySelectorAll('.planting-draw-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      bus.emit('planting:draw', {
-        plantingId: btn.dataset.plantingId,
-        bedId: btn.dataset.bedId
-      });
     });
   });
 
