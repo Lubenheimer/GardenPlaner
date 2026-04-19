@@ -1,6 +1,5 @@
 import { store } from '../core/Store.js';
 import { bus } from '../core/EventBus.js';
-import { applyColorTheme } from '../main.js';
 
 const COLOR_THEMES = [
   {
@@ -284,7 +283,7 @@ export function bindSettingsEvents(containerBlock, onUpdateCallback) {
   containerBlock.querySelectorAll('.theme-tile').forEach(btn => {
     btn.addEventListener('click', () => {
       const themeId = btn.dataset.themeId;
-      applyColorTheme(themeId);
+      bus.emit('settings:colorTheme', themeId);
       onUpdateCallback?.();
     });
   });

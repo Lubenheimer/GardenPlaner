@@ -609,6 +609,30 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
+  _buildBedPath(ctx, bed) {
+    ctx.beginPath();
+    if (bed.type === 'circle') {
+      const rx = bed.width / 2;
+      const ry = bed.height / 2;
+      const cx = bed.x + rx;
+      const cy = bed.y + ry;
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    } else if (bed.type === 'polygon' || bed.type === 'lshaped' || bed.type === 'line') {
+      if (bed.points && bed.points.length > 0) {
+        ctx.moveTo(bed.x + bed.points[0].x, bed.y + bed.points[0].y);
+        for (let i = 1; i < bed.points.length; i++) {
+          ctx.lineTo(bed.x + bed.points[i].x, bed.y + bed.points[i].y);
+        }
+        if (bed.type === 'polygon' || bed.isClosed) {
+          ctx.closePath();
+        }
+      }
+    } else {
+      // Default to rectangle
+      ctx.rect(bed.x, bed.y, bed.width, bed.height);
+    }
+  }
+
   _drawSelection(ctx, bed) {
     const handleSize = 8;
     const handles = this._getResizeHandles(bed, handleSize);

@@ -9,7 +9,6 @@ import { store } from './core/Store.js';
 import { bus } from './core/EventBus.js';
 import { CanvasRenderer } from './core/CanvasRenderer.js';
 import { CanvasInteraction } from './core/CanvasInteraction.js';
-import { ThreeRenderer } from './core/ThreeRenderer.js';
 import { renderBedEditor, bindBedEditorEvents } from './components/BedEditor.js';
 import { renderDashboard } from './components/Dashboard.js';
 import { renderCalendar } from './components/Calendar.js';
@@ -22,9 +21,8 @@ import { renderStatistics } from './components/Statistics.js';
 import { showGardenManager } from './components/GardenManager.js';
 import { bedColors } from './utils/helpers.js';
 
-let renderer, interaction, threeRenderer;
+let renderer, interaction;
 let currentView = 'canvas';
-export const globalEnvControls = { time: 12, season: 6 };
 let _clipboard = null;
 
 // ========== Init ==========
@@ -77,8 +75,6 @@ function initCanvas() {
   const canvas = document.getElementById('garden-canvas');
   renderer = new CanvasRenderer(canvas);
   interaction = new CanvasInteraction(renderer);
-  
-  threeRenderer = new ThreeRenderer('three-canvas-container', globalEnvControls);
 
   const settings = store.getSettings();
   renderer.showGrid = settings.showGrid;
@@ -172,28 +168,8 @@ function initToolbar() {
     renderer._draw(); // force redraw immediately
   });
 
-  // 3D View Toggle
-  let is3DView = false;
-  document.getElementById('tool-3d')?.addEventListener('click', (e) => {
-    is3DView = !is3DView;
-    e.currentTarget.classList.toggle('active', is3DView);
-    const canvasContainer = document.querySelector('.canvas-container');
-    const threeContainer = document.getElementById('three-canvas-container');
-    const gardenCanvas = document.getElementById('garden-canvas');
-    
-    // Disable 2D interactions
-    interaction.enabled = !is3DView;
-    
-    if (is3DView) {
-      gardenCanvas.style.opacity = '0';
-      threeContainer.style.display = 'block';
-      threeRenderer.start();
-    } else {
-      threeRenderer.stop();
-      threeContainer.style.display = 'none';
-      gardenCanvas.style.opacity = '1';
-    }
-  });
+  // Resetting interaction state just in case
+  if (interaction) interaction.enabled = true;
 
   // Zoom
   document.getElementById('tool-zoom-in').addEventListener('click', () => {
@@ -244,17 +220,11 @@ function initToolbar() {
     envTimeLabel.textContent = `${Math.floor(time)}:${minSuffix}`;
     envMonthLabel.textContent = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'][m-1];
     envNorthLabel.textContent = `${envNorth.value}°`;
-    
-    renderer.setEnvironment(time, m, parseFloat(envNorth.value));
-    
-    globalEnvControls.time = time;
-    globalEnvControls.season = m;
-    if (threeRenderer && threeRenderer.isRendering) threeRenderer.updateSunPosition();
-    
-    store.updateSettings({ 
-      simulationTime: time, 
-      simulationMonth: m, 
-      northRotation: parseInt(envNorth.value) 
+
+    store.updateSettings({
+      simulationTime: time,
+      simulationMonth: m,
+      northRotation: parseInt(envNorth.value)
     });
     renderer.render();
   };
@@ -474,6 +444,10 @@ function initEvents() {
     renderBedList();
     renderer.render();
     renderCurrentView();
+  });
+
+  bus.on('settings:colorTheme', (colorTheme) => {
+    applyColorTheme(colorTheme);
   });
 
   bus.on('zoom:changed', (zoom) => {

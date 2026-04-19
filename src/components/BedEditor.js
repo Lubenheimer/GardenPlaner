@@ -2,6 +2,7 @@
  * BedEditor — Right panel editor for a selected bed
  */
 import { store } from '../core/Store.js';
+import { bus } from '../core/EventBus.js';
 import { bedColors, statusLabels, statusEmojis, formatDate } from '../utils/helpers.js';
 import { showHarvestModal } from './HarvestModal.js';
 

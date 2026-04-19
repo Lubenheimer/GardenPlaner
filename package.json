@@ -11,8 +11,7 @@
     "start": "node server/index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "three": "^0.184.0"
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
