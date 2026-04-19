@@ -7,18 +7,18 @@ Hier ist eine Übersicht der leistungsstarken Funktionen, die GardenPlaner zu bi
 
 ---
 
-### 🎨 1. Interaktiver 2D & 3D Garten-Editor
+### 🎨 1. Interaktiver 2D-Garten-Editor
 Zeichne deine Vision exakt auf.
 - **Freie Formgestaltung:** Erstelle Beete, Rasenflächen, Pflastersteine oder Zäune flexibel als Rechteck, Kreis, L-Form oder als komplett individuelles Polygon.
 - **Präzises Planen:** Ein integriertes Mess-Werkzeug (Lineal) und ein zu- und abschaltbares Raster (Grid) helfen dir bei der symmetrischen Anordnung und exakten Flächenzuweisung.
-- **Echtzeit 3D-Ansicht:** Schalte jederzeit per Knopfdruck in eine Pseudo-3D-Ansicht um, um einen räumlichen und plastischen Eindruck deiner Gartenarchitektur zu erhalten.
-- **Rechtsklick-Kontextmenü:** Rechtsklick auf ein beliebiges Objekt öffnet ein Schnellmenü mit Aktionen: Pflanzung hinzufügen, Umbenennen, Duplizieren, Ebene wechseln und Löschen — ohne das Seitenpanel öffnen zu müssen.
+- **Rechtsklick-Kontextmenü:** Rechtsklick auf ein beliebiges Objekt öffnet ein Schnellmenü mit Aktionen: Pflanzung hinzufügen, Fokus (Beet einzoomen), Umbenennen, Duplizieren, Ebene wechseln und Löschen — ohne das Seitenpanel öffnen zu müssen.
+- **Fokus-Modus:** Per Kontextmenü oder Doppelklick zoomt die App auf ein einzelnes Beet, blendet alle anderen Objekte aus und lässt dich in Ruhe planen. Per Esc oder Schaltfläche zurück zur Gesamtansicht.
 - **Beschriftungen immer lesbar:** Objektnamen und Pflanzen-Emojis bleiben immer horizontal ausgerichtet, auch wenn das Objekt gedreht wird.
 - **Schattenwurf pro Objekt:** Im Objekt-Editor lässt sich der Schattenwurf per Toggle einzeln de-/aktivieren — nützlich z.B. für Bodenflächen oder flache Beete ohne relevante Aufbauhöhe.
 
 ### 🧠 2. Intelligenter Pflanz-Assistent
 Nie wieder schlechte Ernten durch falsche Pflanz-Nachbarn oder mangelnde Planung.
-- **Eingebaute Botanik-Datenbank:** Über 68 Pflanzen (Gemüse, Kräuter, Obst, Blumen) mit Guten und Schlechten Nachbarn, Nährstoffbedarf, Pflanzabstand (cm), Erntezeit (Tage) sowie Gieß- und Düngeintervallen.
+- **Eingebaute Botanik-Datenbank:** Über 78 Pflanzen (Gemüse, Kräuter, Obst, Blumen) mit Guten und Schlechten Nachbarn, Nährstoffbedarf, Pflanzabstand (cm), Erntezeit (Tage) sowie Gieß- und Düngeintervallen.
 - **Mischkultur-Visualisierung (Canvas):** Ein spezieller "Mischkultur"-Modus im Canvas zeigt über leuchtende grüne / rote Energie-Flüsse sofort gute und schlechte direkte Nachbarn, sowohl *innerhalb* eines Beetes als auch auf benachbarte Beete (bis zu 1,5m Distanz).
 - **Live-Warnungen:** Fügst du eine Pflanze neben eine inkompatible Pflanze in dasselbe Beet, warnt dich das System sofort mit einem Live-PopUp — inkl. Bodencheck (sandig/lehmig) und Lichtanalyse.
 - **Erweiterte Pflanzungserfassung:** Beim Hinzufügen trage Anzahl (Stück), Sorte/Varietät und Pflanzabstand ein. Pflanzabstand und geplantes Erntedatum werden automatisch aus dem Katalog befüllt.

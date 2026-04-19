@@ -1,4 +1,4 @@
-# GardenPlaner – Feature-Dokumentation & Analyse (v3 – Stand April 2026)
+# GardenPlaner – Feature-Dokumentation & Analyse (v4 – Stand April 2026)
 
 ## Projektübersicht
 
@@ -6,7 +6,7 @@
 
 **Tech-Stack:** Vanilla JavaScript, HTML/CSS, lokaler Express.js-Server, Canvas-basiertes Rendering, Open-Meteo API (kostenlos, kein API-Key nötig)
 
-**Aktueller Funktionsumfang:** 15 Features
+**Aktueller Funktionsumfang:** 16 Features
 
 ---
 
@@ -16,22 +16,25 @@
 |---|---|---|---|
 | v1 | 12 | 68 Pflanzen | Basis-Release |
 | v2 | 13 | 78 Pflanzen | Pflanzen-Bibliothek & Eigene Pflanzen |
-| **v3** | **15** | **78 Pflanzen** | **Jahresstatistik + Drucken/PDF-Export** |
+| v3 | 15 | 78 Pflanzen | Jahresstatistik + Drucken/PDF-Export |
+| **v4** | **16** | **78 Pflanzen** | **Fokus-Modus, 3D entfernt, Saison-System ergänzt** |
 
-**Neu in v3:**
-- 📊 Feature 9: Jahresstatistik mit KPI-Kacheln, Diagrammen und Auswertungen
-- 🖨️ Feature 10: Drucken & PDF-Export des Gartenplans
+**Neu/geändert in v4:**
+- ✂️ Feature 1: 3D-Ansicht entfernt (ThreeRenderer nicht fertiggestellt, Codebase bereinigt)
+- 🔍 Feature 1: Fokus-Modus hinzugefügt (Beet einzoomen, alle anderen Objekte ausblenden)
+- 📊 Feature 2: Pflanzendatenbank-Zahl korrigiert (68 → 78 Pflanzen)
+- 🗄️ Feature 11: Saison-System & Archiv jetzt vollständig dokumentiert (war bisher nicht in Analyse enthalten)
 
 ---
 
-## Feature 1: Interaktiver 2D & 3D Garten-Editor
+## Feature 1: Interaktiver 2D-Garten-Editor
 
 Der Editor ist das Herzstück der App und ermöglicht präzises visuelles Planen.
 
 - **Freie Formgestaltung:** Beete, Rasenflächen, Pflastersteine oder Zäune als Rechteck, Kreis, L-Form oder individuelles Polygon
 - **Präzisionswerkzeuge:** Integriertes Mess-Werkzeug (Lineal) und ein-/abschaltbares Raster (Grid)
-- **Echtzeit 3D-Ansicht:** Per Knopfdruck in Pseudo-3D-Ansicht wechseln für räumlichen Eindruck
-- **Rechtsklick-Kontextmenü:** Schnellzugriff auf Pflanzung hinzufügen, Umbenennen, Duplizieren, Ebene wechseln, Löschen
+- **Rechtsklick-Kontextmenü:** Schnellzugriff auf Pflanzung hinzufügen, Fokus (Beet einzoomen), Umbenennen, Duplizieren, Ebene wechseln, Löschen
+- **Fokus-Modus:** Zoomt auf ein einzelnes Beet und blendet alle anderen Objekte aus – ideal für detaillierte Planung. Beenden per Esc-Taste oder Schaltfläche.
 - **Lesbare Beschriftungen:** Objektnamen und Pflanzen-Emojis bleiben horizontal ausgerichtet, auch bei Rotation
 - **Schattenwurf-Toggle:** Pro Objekt einzeln aktivierbar/deaktivierbar (sinnvoll für flache Beete oder Bodenflächen)
 
@@ -41,13 +44,14 @@ Der Editor ist das Herzstück der App und ermöglicht präzises visuelles Planen
 
 Eine eingebaute Botanik-Datenbank verhindert schlechte Nachbarschaften und optimiert Erträge.
 
-- **68+ Pflanzen** – Gemüse, Kräuter, Obst, Blumen, jeweils mit:
+- **78+ Pflanzen** – Gemüse, Kräuter, Obst, Blumen, jeweils mit:
   - Guten und schlechten Nachbarn
   - Nährstoffbedarf (Starkzehrer/Schwachzehrer)
   - Pflanzabstand (cm)
   - Erntezeit (Tage)
   - Gieß- und Düngeintervallen
-- **Live-Warnungen:** Sofortiges Pop-Up bei Platzierung inkompatibler Pflanzen im selben Beet, inkl. Bodencheck und Lichtanalyse
+- **Mischkultur-Visualisierung:** Spezieller Canvas-Modus mit grünen/roten Energie-Flüssen für gute/schlechte Nachbarn (innerhalb Beetes und bis 1,5m Distanz zu Nachbarbeeten)
+- **Live-Warnungen:** Sofortiges Pop-Up bei Platzierung inkompatibler Pflanzen, inkl. Bodencheck und Lichtanalyse
 - **Erweiterte Pflanzungserfassung:** Anzahl (Stück), Sorte/Varietät, Pflanzabstand – teils automatisch aus Katalog befüllt
 - **Info-Badges:** Kurzinfos zu Nährstoff, Abstand, Erntezeit und Pflege direkt bei Pflanzenauswahl
 - **Boden- & Nährstoff-Check:** Verfolgung von Nährstoffbedarf, Bodenbeschaffenheit und Feuchtigkeit pro Beet
@@ -62,7 +66,7 @@ Dein personalisiertes Garten-Lexikon direkt in der App.
 - **Eigene Pflanzen anlegen:** Erstelle völlig neue Sorten mit vollständig eigenen Werten:
   - Pflanzabstand, Erntedauer, Gieß-/Düngeintervall, Nährstoffbedarf, Nachbarschaftsregeln
 - **Hybrides System:** Eigene Pflanzen verhalten sich in der gesamten App zu 100% wie System-Pflanzen – inkl. Fruchtfolge-Warnungen, Autocomplete im Beet-Editor u.v.m.
-- **System-Pflanzen überschreiben:** Nicht zufrieden mit Standard-Vorgaben? Bearbeite sie – die App überschreibt sie virtuell mit deinen Werten, das Original bleibt als Fallback erhalten.
+- **System-Pflanzen überschreiben:** Bearbeite Standard-Vorgaben – die App überschreibt sie virtuell mit deinen Werten, das Original bleibt als Fallback erhalten.
 
 ---
 
@@ -71,9 +75,10 @@ Dein personalisiertes Garten-Lexikon direkt in der App.
 Physikalisch korrekter Schattenwurf für optimale Pflanzenplatzierung.
 
 - **Echter Schattenwurf:** Nordausrichtung definierbar, daraus physikalisch korrekte Schattenberechnung
-- **Zeitsteuerung:** Slider für Tageszeit (8:00–20:00 Uhr) und Monat (Januar–Dezember)
+- **Zeitsteuerung:** Slider für Tageszeit (6:00–20:00 Uhr) und Monat (Januar–Dezember)
+- **Nordrotations-Slider:** Gartenausrichtung in Grad einstellbar für korrekte Himmelsrichtungsberechnung
 - **Standort-Warnung:** Alarm bei Platzierung von Sonnenpflanzen in Schattenbereichen
-- **Toggle:** Objekte können vom Schattenwurf ausgenommen werden
+- **Toggle pro Objekt:** Schattenwurf für einzelne Elemente aktivierbar/deaktivierbar
 
 ---
 
@@ -112,6 +117,7 @@ Das integrierte Gedächtnis des Gartens – wetter-intelligent.
 - **Niederschlags-Banner:** inkl. Staunässe-Warnung bei > 15mm
 - **Pflege-Intervall-Übersicht:** Kacheln pro Beet mit 💧 und 🧪 Badges
 - **Automatische Einkaufslisten:** Geplante Pflanzen erscheinen als Erinnerungs-Block
+- **Frost-Warnung:** Bei geplanten Pflanzungen der nächsten 14 Tage und Temperaturen ≤ 2 °C
 
 ---
 
@@ -125,21 +131,22 @@ Saisonale Übersicht für die Gesamtplanung.
 
 ---
 
-## Feature 9: Jahresstatistik ⭐ NEU in v3
+## Feature 9: Jahresstatistik
 
 Dein Garten auf einen Blick – Ernte, Kosten, Aufgaben als vollständiges Auswertungs-Dashboard.
 
+- **Saison-Selector:** Wechsel zwischen aktiver und vergangener Saison (Archiv-Ansicht)
 - **KPI-Kacheln:** Sofort-Überblick über Beete, Pflanzungen, Ernten, Ausgaben und Aufgaben-Fortschritt
 - **Ernte-Ranking:** Horizontales Balkendiagramm mit allen Sorten, sortiert nach Gesamtmenge
 - **Ausgaben nach Monat:** Säulendiagramm aller Ausgaben über das Jahr (12 Monate)
 - **Ausgaben nach Kategorie:** Horizontale Balken für Saatgut, Erde/Dünger, Werkzeug, Sonstiges
 - **Pflanzungs-Status:** Kacheln nach Status (Geplant / Gesetzt / Wachsend / Ernte)
-- **Pflanzarten-Verteilung:** Aufschlüsselung aller Pflanzungen nach Gemüse / Kräuter / Obst / Blumen
+- **Pflanzarten-Verteilung:** Aufschlüsselung aller Pflanzungen nach Kategorie
 - **Aufgaben-Fortschritt:** Großer Fortschrittsbalken mit Prozentzahl (erledigt vs. offen)
 
 ---
 
-## Feature 10: Drucken & PDF-Export ⭐ NEU in v3
+## Feature 10: Drucken & PDF-Export
 
 Den Gartenplan professionell auf Papier bringen.
 
@@ -152,17 +159,28 @@ Den Gartenplan professionell auf Papier bringen.
 
 ---
 
-## Feature 11: Höhenebenen (Z-Achse)
+## Feature 11: Saison-System & Archiv
+
+Gieß dein Wissen nicht weg — nimm es mit ins nächste Jahr.
+
+- **Weicher Jahreswechsel:** Im Frühjahr startest du mit einem Klick in die neue Saison – erledigte Pflanzungen werden archiviert, das Beet-Layout bleibt erhalten
+- **Mehrjährige Pflanzen (Stauden):** Obstbäume, Beeren, Spargel als Staude markieren → beim Saisonwechsel archiviert und nahtlos in neue Saison geklont
+- **Archiv-Ansicht:** Statistik jederzeit per Dropdown auf vergangene Jahre filterbar
+- **Keine Datenverluste:** Pflanz-Historie bleibt dauerhaft im Store abrufbar
+
+---
+
+## Feature 12: Höhenebenen (Z-Achse)
 
 Realistische Darstellung von Hanglagen und mehrstöckigen Konstruktionen.
 
-- **Ebenen:** Bodenebene, Hochbeet, Terrasse (und weitere benutzerdefinierte)
+- **Ebenen:** Bodenebene, Hauptebene, Erhöhte Fläche (und weitere benutzerdefinierte)
 - **Korrekte Darstellung:** Objekte auf höheren Ebenen überlappen optisch sauber
 - **Distanz-Schatten:** Höhere Objekte werfen größere, realistischere Schatten
 
 ---
 
-## Feature 12: Wachstums- & Fotoarchiv
+## Feature 13: Wachstums- & Fotoarchiv
 
 Visuelle Dokumentation des Gartenerfolgs.
 
@@ -171,7 +189,7 @@ Visuelle Dokumentation des Gartenerfolgs.
 
 ---
 
-## Feature 13: Multi-Garten-Verwaltung
+## Feature 14: Multi-Garten-Verwaltung
 
 Verwaltung mehrerer Projekte in einer App.
 
@@ -181,7 +199,7 @@ Verwaltung mehrerer Projekte in einer App.
 
 ---
 
-## Feature 14: Farbdesign & Themes
+## Feature 15: Farbdesign & Themes
 
 Personalisierung der Benutzeroberfläche.
 
@@ -192,7 +210,7 @@ Personalisierung der Benutzeroberfläche.
 
 ---
 
-## Feature 15: Lokale Datensicherung & Offline-Betrieb
+## Feature 16: Lokale Datensicherung & Offline-Betrieb
 
 Vollständige Datensouveränität – keine Cloud, kein Konto.
 
@@ -207,10 +225,12 @@ Vollständige Datensouveränität – keine Cloud, kein Konto.
 
 | Kategorie | Details |
 |---|---|
-| Features gesamt | **15** |
+| Features gesamt | **16** |
 | Pflanzen in Datenbank | 78 (inkl. anpassbarer System-Pflanzen) |
 | Eigene Pflanzen | unbegrenzt anlegbar |
-| Statistik & Export | Jahresstatistik + PDF/Druck-Export (neu in v3) |
+| Statistik & Export | Jahresstatistik + PDF/Druck-Export |
+| Saison-Management | Weicher Jahreswechsel, Stauden-Klon, Archiv |
+| Fokus-Modus | Einzelbeet einzoomen, andere Objekte ausblenden |
 | Wetter-API | Open-Meteo (kostenlos, kein Key) |
 | Datenspeicherung | Lokal (JSON + localStorage) |
 | Cloud-Pflicht | Keine |
