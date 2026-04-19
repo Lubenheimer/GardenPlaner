@@ -212,6 +212,21 @@ export function showPlantingModal(bedId) {
     }
 
     // 3. Bodenbeschaffenheit & Feuchtigkeit
+    if (bed && bed.soil && bed.soil !== 'normal' && plant.preferredSoil && plant.preferredSoil.length > 0) {
+      if (!plant.preferredSoil.includes(bed.soil)) {
+        const soilLabels = { sand: 'Sandboden', clay: 'Lehmboden', humus: 'humusreicher Boden', normal: 'normaler Gartenboden' };
+        const preferredLabels = plant.preferredSoil
+          .filter(s => s !== 'normal')
+          .map(s => soilLabels[s] || s);
+        const bedSoilLabel = soilLabels[bed.soil] || bed.soil;
+        const preferredText = preferredLabels.length > 0
+          ? ` Ideal: ${preferredLabels.join(' oder ')}.`
+          : '';
+        html += `<div style="background: rgba(245, 158, 11, 0.1); color: var(--color-warning); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
+          🪨 <strong>Bodeneignung:</strong> ${plant.name} ist weniger geeignet für ${bedSoilLabel}.${preferredText}
+        </div>`;
+      }
+    }
     if (bed && bed.soil === 'sand' && plant.nutrition === 'stark') {
       html += `<div style="background: rgba(59, 130, 246, 0.1); color: var(--color-primary); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
         ℹ️ <strong>Sandiger Boden:</strong> Starkzehrer wie ${plant.name} benötigen hier deutlich mehr Dünger und regelmäßiges Gießen.
