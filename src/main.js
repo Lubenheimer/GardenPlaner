@@ -36,16 +36,8 @@ function init() {
   _updateGardenLabel();
   renderCurrentView();
 
-  // Center canvas
-  setTimeout(() => {
-    const container = document.querySelector('.canvas-container');
-    if (container) {
-      renderer.setOffset(
-        container.clientWidth / 2 - store.getGarden().width / 2,
-        container.clientHeight / 2 - store.getGarden().height / 2
-      );
-    }
-  }, 100);
+  // Fit entire garden into view on startup
+  setTimeout(() => renderer.fitAll(), 100);
 }
 
 // ========== Theme ==========
