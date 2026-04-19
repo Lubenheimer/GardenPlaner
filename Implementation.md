@@ -189,6 +189,15 @@ Features die die App im Alltag über die Saison relevant halten:
 7. **Aussaat-Erinnerungen**
    Push-Notifications oder Dashboard-Hinweis: „In 2 Wochen ist ideale Aussaatzeit für Tomaten (laut Standort & Gantt)".
 
+8. **Boden-Eignungswarnung bei Pflanzauswahl**
+   Beim Hinzufügen einer Pflanzung (`PlantingModal.js`) wird der Bodentyp des Beetes (`bed.soil`: `normal / sand / clay / humus`) gegen einen neuen Katalogwert `preferredSoil[]` der Pflanze geprüft. Bei Nichtübereinstimmung erscheint ein gelber Warnhinweis im Modal — analog zu den bestehenden Nachbarschafts- und Lichtwarnungen.
+   
+   **Umsetzung:**
+   - `plants.js`: Jede Pflanze bekommt `preferredSoil: ['normal', 'humus']` (Array erlaubter Böden). Fehlt das Feld → keine Prüfung (rückwärtskompatibel).
+   - `PlantingModal.js`: Nach Pflanzenauswahl wird `bed.soil` gegen `plant.preferredSoil` geprüft. Warnung z.B.: _„⚠️ Tomate bevorzugt humosen Boden — dein Beet hat Lehmboden."_
+   - Eigene Pflanzen (`customPlants`) können `preferredSoil` ebenfalls setzen.
+   - Warnung ist **nicht blockierend** — der Nutzer kann trotzdem pflanzen.
+
 ---
 
 ## 🚀 7. Größere Features — OFFEN
