@@ -1,6 +1,6 @@
 # Implementierungsplan: GardenPlaner V2
 
-Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 19.04.2026)
+Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026)
 
 ---
 
@@ -9,7 +9,6 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 19.04.2026)
 | Priorität | Feature | Abschnitt |
 |---|---|---|
 | 🔴 Mittel | Automatische Einkaufsliste (Check-off + CSV) | 6.3 |
-| 🔴 Mittel | Boden-Eignungswarnung bei Pflanzauswahl | 6.8 |
 | 🟡 Mittel | Inter-Beet Mischkultur-Prüfung beim Pflanzen | 7.2 |
 | 🟡 Mittel | `prompt()` in Kontextmenü (Umbenennen) + GardenManager ersetzen | 7.x |
 | 🟢 Groß | Mobile-Optimierung (Pinch-to-Zoom, Touch) | 7.6 |
@@ -102,13 +101,14 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 19.04.2026)
 
 7. ✅ **Aussaat-Erinnerungen** — `generateSowingReminders()` in Tasks.js zeigt geplante Pflanzungen der nächsten 14 Tage priorisiert; inkl. Frost-Warnung bei ≤ 2 °C
 
-8. ❌ **Boden-Eignungswarnung bei Pflanzauswahl**
-   Beim Hinzufügen einer Pflanzung wird `bed.soil` (`normal / sand / clay / humus`) gegen einen neuen Katalogwert `preferredSoil[]` der Pflanze geprüft. Bei Nichtübereinstimmung erscheint ein gelber, nicht-blockierender Warnhinweis im Modal — analog zu Nachbarschafts- und Lichtwarnungen.
+8. ✅ **Boden-Eignungswarnung bei Pflanzauswahl**
+   Beim Hinzufügen einer Pflanzung wird `bed.soil` (`normal / sand / clay / humus`) gegen `preferredSoil[]` der Pflanze geprüft. Bei Nichtübereinstimmung erscheint ein gelber, nicht-blockierender Warnhinweis im Modal — analog zu Nachbarschafts- und Lichtwarnungen.
    
    **Umsetzung:**
-   - `plants.js`: Neues Feld `preferredSoil: ['normal', 'humus']` pro Pflanze (fehlendes Feld = keine Prüfung)
-   - `PlantingModal.js`: Warnung z.B. _„⚠️ Tomate bevorzugt humosen Boden — dein Beet hat Lehmboden."_
+   - `plants.js`: Neues Feld `preferredSoil: ['normal', 'humus']` für ~35 Pflanzen (fehlendes Feld = keine Prüfung)
+   - `PlantingModal.js`: Warnung z.B. _„🪨 **Bodeneignung:** Tomate ist weniger geeignet für Lehmboden. Ideal: humusreicher Boden."_
    - Eigene Pflanzen (`customPlants`) können `preferredSoil` ebenfalls setzen
+   - **Warnt bei:** Tonboden für Wurzelgemüse, Sandboden für Nährstoffzährer, einzelne Spezialisten wie Heidelbeere (nur Humus)
 
 ---
 
