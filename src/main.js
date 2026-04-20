@@ -14,6 +14,7 @@ import { renderDashboard } from './components/Dashboard.js';
 import { renderCalendar } from './components/Calendar.js';
 import { renderPhotos } from './components/Photos.js';
 import { renderTasks } from './components/Tasks.js';
+import { renderShoppingList } from './components/ShoppingList.js';
 import { showPlantingModal } from './components/PlantingModal.js';
 import { renderSetup } from './components/SettingsManager.js';
 import { renderCatalog } from './components/Catalog.js';
@@ -133,6 +134,7 @@ function renderCurrentView() {
     case 'calendar': renderCalendar(); break;
     case 'photos': renderPhotos(); break;
     case 'tasks': renderTasks(); break;
+    case 'shopping': renderShoppingList(); break;
     case 'setup': renderSetup(); break;
     case 'catalog': renderCatalog(); break;
     case 'statistics': renderStatistics(); break;

@@ -425,6 +425,28 @@ class Store {
     return Array.from(seasons).sort((a, b) => b - a); // newest first
   }
 
+  /** Returns all plantings with status 'planned', grouped by plant name */
+  getPlannedPlantings() {
+    const all = this._active().plantings;
+    const active = all.filter(p => !p.archived && p.status === 'planned');
+
+    // Group by plant name
+    const grouped = {};
+    active.forEach(p => {
+      if (!grouped[p.name]) {
+        grouped[p.name] = {
+          name: p.name,
+          emoji: p.emoji,
+          category: p.category,
+          items: [],
+        };
+      }
+      grouped[p.name].items.push(p);
+    });
+
+    return Object.values(grouped);
+  }
+
   addPlanting(planting) {
     const newPlanting = {
       id:                  this.generateId('planting'),

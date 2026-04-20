@@ -15,7 +15,8 @@
       "Bash(python -m notebooklm --version)",
       "Bash(python -m notebooklm list)",
       "Bash(python -c ':*)",
-      "Bash(python -m notebooklm login)"
+      "Bash(python -m notebooklm login)",
+      "Bash(python -c ' *)"
     ]
   }
 }
