@@ -30,6 +30,8 @@ export class CanvasRenderer {
     this.selectedBedId = null;
     this.hoveredBedId = null;
     this.draggingBedId = null;
+    this.draggingPlantId = null;  // ID of planting being dragged within placing mode
+    this.placingBedId = null;     // ID of bed currently in placing mode
     this.animationFrame = null;
 
     // ── Focus / Zoom-to-Bed ────────────────────────────────────────
@@ -505,6 +507,9 @@ export class CanvasRenderer {
     ctx.shadowOffsetY = 0;
 
     const plantings = store.getPlantings(bed.id);
+    const positioned = plantings.filter(p => p.position);
+    const unpositioned = plantings.filter(p => !p.position);
+
     ctx.fillStyle    = this._getThemeColor('text');
     ctx.font         = `600 ${Math.max(11, 14 / Math.max(this.zoom, 0.5))}px Inter, sans-serif`;
     ctx.textAlign    = 'center';
@@ -514,14 +519,87 @@ export class CanvasRenderer {
     const lcy = bed.y + bed.height / 2;
     ctx.fillText(bed.name, lcx, lcy - 8);
 
-    if (plantings.length > 0) {
+    // Unpositioned plantings: show as emoji list in center
+    if (unpositioned.length > 0) {
       ctx.font      = `400 ${Math.max(9, 11 / Math.max(this.zoom, 0.5))}px Inter, sans-serif`;
       ctx.fillStyle = this._getThemeColor('text-muted');
-      const emojis  = plantings.slice(0, 4).map(p => p.emoji).join(' ');
+      const emojis  = unpositioned.slice(0, 4).map(p => p.emoji).join(' ');
       ctx.fillText(emojis, lcx, lcy + 10);
     }
 
     ctx.restore();
+
+    // ── Pass 3: Positioned plant markers ──────────────────────────
+    if (positioned.length > 0 || this.placingBedId === bed.id) {
+      this._drawPlantPositions(ctx, bed, positioned);
+    }
+
+    // ── Placing-mode highlight ──────────────────────────────────────
+    if (this.placingBedId === bed.id) {
+      ctx.save();
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth   = 2.5;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.rect(bed.x - 6, bed.y - 6, bed.width + 12, bed.height + 12);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // "Klick zum Platzieren" hint
+      ctx.fillStyle = 'rgba(34, 197, 94, 0.85)';
+      ctx.font      = `bold ${Math.max(9, 11 / Math.max(this.zoom, 0.5))}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('📍 Klicke ins Beet', bed.x + bed.width / 2, bed.y - 22);
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Draw emoji markers for plantings that have a position set.
+   * position.px/py are relative coords (0-1) within the bed bounding box.
+   */
+  _drawPlantPositions(ctx, bed, positioned) {
+    const markerR   = Math.max(10, 13 / Math.max(this.zoom, 0.4));
+    const fontSize  = Math.max(10, 14 / Math.max(this.zoom, 0.4));
+
+    positioned.forEach(p => {
+      const wx = bed.x + p.position.px * bed.width;
+      const wy = bed.y + p.position.py * bed.height;
+
+      const isDragged = this.draggingPlantId === p.id;
+
+      ctx.save();
+
+      // Background circle
+      ctx.beginPath();
+      ctx.arc(wx, wy, markerR, 0, Math.PI * 2);
+      ctx.fillStyle = isDragged
+        ? 'rgba(34, 197, 94, 0.3)'
+        : 'rgba(255, 255, 255, 0.88)';
+      ctx.fill();
+      ctx.strokeStyle = isDragged ? '#22c55e' : 'rgba(0,0,0,0.18)';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+
+      // Emoji
+      ctx.font         = `${fontSize}px serif`;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor  = 'transparent';
+      ctx.fillStyle    = '#000';
+      ctx.fillText(p.emoji, wx, wy);
+
+      // Name label if zoom high enough
+      if (this.zoom > 0.7) {
+        ctx.font      = `${Math.max(8, 9 / Math.max(this.zoom, 0.5))}px Inter, sans-serif`;
+        ctx.fillStyle = this._getThemeColor('text');
+        ctx.textBaseline = 'top';
+        ctx.fillText(p.name, wx, wy + markerR + 1);
+      }
+
+      ctx.restore();
+    });
   }
 
   _buildBedPath(ctx, bed) {

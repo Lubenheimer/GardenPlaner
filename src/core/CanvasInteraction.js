@@ -21,9 +21,157 @@ export class CanvasInteraction {
     this.drawStart = null;
     this.enabled = true;
 
+    // ── Plant Placing Mode ─────────────────────────────────────────
+    this.isPlacingPlants   = false;
+    this.placingBedId      = null;
+    this.isDraggingPlant   = false;
+    this.draggingPlantId   = null;
+    this.draggingPlantStart = null;
+
     this.renderer.interaction = this;
 
     this._bindEvents();
+    this._bindPlacingModeEvents();
+  }
+
+  // ── Plant Placing Mode public API ──────────────────────────────────
+
+  startPlacingMode(bedId) {
+    this.isPlacingPlants = true;
+    this.placingBedId    = bedId;
+    this.renderer.placingBedId = bedId;
+    this.canvas.style.cursor = 'crosshair';
+    this.renderer.render();
+  }
+
+  stopPlacingMode() {
+    this.isPlacingPlants = false;
+    this.placingBedId    = null;
+    this.renderer.placingBedId = null;
+    this.renderer.draggingPlantId = null;
+    this.isDraggingPlant = false;
+    this.draggingPlantId = null;
+    this.canvas.style.cursor = 'default';
+    this.renderer.render();
+    bus.emit('placing:stopped');
+  }
+
+  _bindPlacingModeEvents() {
+    // ESC key exits placing mode
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isPlacingPlants) {
+        this.stopPlacingMode();
+      }
+    });
+  }
+
+  /**
+   * Returns the planting marker (if any) at world position, within the placing bed.
+   * Returns the planting object or null.
+   */
+  _getPlantMarkerAt(worldX, worldY) {
+    if (!this.placingBedId) return null;
+    const bed = store.getBed(this.placingBedId);
+    if (!bed) return null;
+    const plantings = store.getPlantings(this.placingBedId).filter(p => p.position);
+    const markerR = Math.max(10, 13 / Math.max(this.renderer.zoom, 0.4));
+
+    for (const p of plantings) {
+      const mx = bed.x + p.position.px * bed.width;
+      const my = bed.y + p.position.py * bed.height;
+      const dist = Math.sqrt((worldX - mx) ** 2 + (worldY - my) ** 2);
+      if (dist <= markerR) return p;
+    }
+    return null;
+  }
+
+  /**
+   * Check if worldX/Y is inside the placing bed bounding box.
+   */
+  _isInsidePlacingBed(worldX, worldY) {
+    const bed = store.getBed(this.placingBedId);
+    if (!bed) return false;
+    return worldX >= bed.x && worldX <= bed.x + bed.width
+        && worldY >= bed.y && worldY <= bed.y + bed.height;
+  }
+
+  /**
+   * Show the plant-picker popup near screen position (sx, sy).
+   * Lists all plantings of the placing bed. On pick, places planting at worldX/Y.
+   */
+  _showPlantPicker(sx, sy, worldX, worldY) {
+    const bed = store.getBed(this.placingBedId);
+    if (!bed) return;
+
+    const plantings = store.getPlantings(this.placingBedId);
+    if (plantings.length === 0) return;
+
+    // Remove any existing picker
+    document.getElementById('plant-position-picker')?.remove();
+
+    const picker = document.createElement('div');
+    picker.id = 'plant-position-picker';
+    picker.style.cssText = `
+      position: fixed;
+      left: ${sx + 8}px;
+      top: ${sy - 8}px;
+      background: var(--bg-surface, #1a1a2e);
+      border: 1px solid var(--color-border, #333);
+      border-radius: 8px;
+      padding: 6px;
+      z-index: 9999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 160px;
+      max-height: 220px;
+      overflow-y: auto;
+      font-family: Inter, sans-serif;
+    `;
+
+    const px = (worldX - bed.x) / bed.width;
+    const py = (worldY - bed.y) / bed.height;
+
+    plantings.forEach(p => {
+      const item = document.createElement('button');
+      item.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--color-text, #fff);
+        font-size: 13px;
+        text-align: left;
+        width: 100%;
+        transition: background 0.1s;
+      `;
+      item.innerHTML = `<span>${p.emoji}</span><span style="flex:1">${p.name}</span>${p.position ? '<span style="font-size:10px;color:var(--color-success,#22c55e)">✓</span>' : ''}`;
+      item.addEventListener('mouseenter', () => item.style.background = 'var(--color-primary-soft, rgba(255,255,255,0.08))');
+      item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+      item.addEventListener('click', () => {
+        store.updatePlanting(p.id, { position: { px: Math.max(0.02, Math.min(0.98, px)), py: Math.max(0.02, Math.min(0.98, py)) } });
+        picker.remove();
+        this.renderer.render();
+        bus.emit('plantings:positioned', p.id);
+      });
+      picker.appendChild(item);
+    });
+
+    // Close on outside click
+    const closePicker = (e) => {
+      if (!picker.contains(e.target)) {
+        picker.remove();
+        document.removeEventListener('mousedown', closePicker);
+      }
+    };
+    setTimeout(() => document.addEventListener('mousedown', closePicker), 10);
+
+    document.body.appendChild(picker);
   }
 
   setTool(tool) {
@@ -59,6 +207,31 @@ export class CanvasInteraction {
     if (!this.enabled) return;
     const pos = this._getMousePos(e);
     const world = this.renderer.screenToWorld(pos.x, pos.y);
+
+    // ── Plant placing mode ────────────────────────────────────────
+    if (this.isPlacingPlants && this.placingBedId) {
+      // Check if clicking an existing plant marker (to drag it)
+      const marker = this._getPlantMarkerAt(world.x, world.y);
+      if (marker) {
+        this.isDraggingPlant   = true;
+        this.draggingPlantId   = marker.id;
+        this.renderer.draggingPlantId = marker.id;
+        this.canvas.style.cursor = 'grabbing';
+        return;
+      }
+      // Click inside bed → show plant picker
+      if (this._isInsidePlacingBed(world.x, world.y)) {
+        const rect = this.canvas.getBoundingClientRect();
+        this._showPlantPicker(
+          e.clientX,
+          e.clientY,
+          world.x,
+          world.y,
+        );
+        return;
+      }
+      return;
+    }
 
     // Drawing mode: create new bed
     if (this.tool !== 'select') {
@@ -140,6 +313,25 @@ export class CanvasInteraction {
     const world = this.renderer.screenToWorld(pos.x, pos.y);
 
     this.lastHoverPoint = world;
+
+    // ── Drag plant marker in placing mode ─────────────────────────
+    if (this.isPlacingPlants && this.isDraggingPlant && this.draggingPlantId) {
+      const bed = store.getBed(this.placingBedId);
+      if (bed) {
+        const px = Math.max(0.02, Math.min(0.98, (world.x - bed.x) / bed.width));
+        const py = Math.max(0.02, Math.min(0.98, (world.y - bed.y) / bed.height));
+        store.updatePlanting(this.draggingPlantId, { position: { px, py } });
+        this.renderer.render();
+      }
+      return;
+    }
+
+    // ── Cursor hint in placing mode ───────────────────────────────
+    if (this.isPlacingPlants && this.placingBedId) {
+      const marker = this._getPlantMarkerAt(world.x, world.y);
+      this.canvas.style.cursor = marker ? 'grab' : (this._isInsidePlacingBed(world.x, world.y) ? 'crosshair' : 'not-allowed');
+      return;
+    }
 
     if (this.isDrawing) {
       if (this.tool === 'polygon' || this.tool === 'line') {
@@ -249,6 +441,17 @@ export class CanvasInteraction {
 
   _onMouseUp(e) {
     if (!this.enabled) return;
+
+    // ── End plant drag in placing mode ────────────────────────────
+    if (this.isDraggingPlant) {
+      this.isDraggingPlant = false;
+      this.draggingPlantId = null;
+      this.renderer.draggingPlantId = null;
+      this.canvas.style.cursor = 'crosshair';
+      this.renderer.render();
+      store.unlockHistory();
+      return;
+    }
 
     if (this.isDrawing && (this.tool === 'polygon' || this.tool === 'line')) {
       if (this.polygonPoints && this.polygonPoints.length > 1) {

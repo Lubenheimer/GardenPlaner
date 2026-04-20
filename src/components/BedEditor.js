@@ -127,9 +127,18 @@ export function renderBedEditor(bed) {
 
       ${currentType.hasPlantings ? `
       <div class="panel-section">
-        <div class="panel-section-title" style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="panel-section-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap: wrap; gap: 4px;">
           Pflanzungen (${plantings.length})
-          <button class="btn btn-sm btn-secondary" id="add-planting-btn">+ Hinzufügen</button>
+          <div style="display: flex; gap: 4px;">
+            ${plantings.length > 0 ? `
+            <button class="btn btn-sm" id="position-plantings-btn" data-bed-id="${bed.id}"
+              title="Pflanzen auf dem Canvas positionieren"
+              style="background: var(--color-success-soft, rgba(34,197,94,0.12)); color: var(--color-success, #22c55e); border: 1px solid var(--color-success, #22c55e);">
+              📍 Positionieren
+            </button>
+            ` : ''}
+            <button class="btn btn-sm btn-secondary" id="add-planting-btn">+ Hinzufügen</button>
+          </div>
         </div>
         ${plantings.length === 0
           ? `<div class="empty-state" style="padding: var(--space-md)">
@@ -142,9 +151,13 @@ export function renderBedEditor(bed) {
                 if (p.variety) meta.push(p.variety);
                 if (p.quantity) meta.push(`${p.quantity} Stk`);
                 if (p.spacing) meta.push(`↔${p.spacing}cm`);
+                const hasPosition = !!p.position;
                 return `
                 <div class="planting-item">
-                  <span class="planting-emoji">${p.emoji}</span>
+                  <span class="planting-emoji" title="${hasPosition ? '📍 Positioniert auf Canvas' : 'Keine Canvas-Position'}" style="position:relative;">
+                    ${p.emoji}
+                    ${hasPosition ? `<span style="position:absolute;top:-4px;right:-4px;font-size:8px;background:var(--color-success,#22c55e);border-radius:50%;width:10px;height:10px;display:flex;align-items:center;justify-content:center;color:white;">📍</span>` : ''}
+                  </span>
                   <div class="planting-info">
                     <div class="planting-name">${p.name}${meta.length > 0 ? ` <span style="font-weight:400;font-size:11px;color:var(--color-text-muted)">${meta.join(' · ')}</span>` : ''}</div>
                     <div class="planting-date">${formatDate(p.datePlanted)}${p.dateHarvestExpected ? ` → ${formatDate(p.dateHarvestExpected)}` : ''}${harvestCount > 0 ? ` · 🧺 ${harvestCount}×` : ''}</div>
@@ -161,6 +174,11 @@ export function renderBedEditor(bed) {
                     title="Status ändern">
                     <span class="badge badge-${p.status}">${statusEmojis[p.status]} ${statusLabels[p.status]}</span>
                   </button>
+                  ${hasPosition ? `
+                  <button class="icon-btn small planting-unposition-btn" data-planting-id="${p.id}" title="Canvas-Position entfernen" style="color: var(--color-success, #22c55e);">
+                    📍
+                  </button>
+                  ` : ''}
                   <button class="icon-btn small planting-delete-btn" data-planting-id="${p.id}" title="Löschen">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
@@ -319,6 +337,18 @@ export function bindBedEditorEvents(bedId, handlers) {
 
   // Add planting
   document.getElementById('add-planting-btn')?.addEventListener('click', handlers.onAddPlanting);
+
+  // Position plantings on canvas
+  document.getElementById('position-plantings-btn')?.addEventListener('click', () => {
+    bus.emit('planting:startPositioning', bedId);
+  });
+
+  // Remove canvas position from a planting (📍 button)
+  document.querySelectorAll('.planting-unposition-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      store.updatePlanting(btn.dataset.plantingId, { position: null });
+    });
+  });
 
   // Planting status toggle
   document.querySelectorAll('.planting-status-btn').forEach(btn => {

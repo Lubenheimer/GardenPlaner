@@ -470,6 +470,22 @@ function initEvents() {
     if (btn) btn.classList.add('hidden');
   });
 
+  // Plant positioning mode
+  bus.on('planting:startPositioning', (bedId) => {
+    // Switch to canvas view first
+    if (currentView !== 'canvas') switchView('canvas');
+    // Small delay to ensure canvas is visible before starting mode
+    setTimeout(() => {
+      interaction.startPlacingMode(bedId);
+      // Show a dismissable banner
+      _showPlacingBanner();
+    }, 50);
+  });
+
+  bus.on('placing:stopped', () => {
+    _hidePlacingBanner();
+  });
+
   // Keyboard
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -550,6 +566,51 @@ function _updateServerStatus(online) {
     dot.style.background = 'var(--color-text-muted)';
     dot.title = '⚠️ Offline-Modus – Daten nur im Browser-Speicher (localStorage)';
   }
+}
+
+// ========== Plant Placing Mode Banner ==========
+function _showPlacingBanner() {
+  document.getElementById('placing-mode-banner')?.remove();
+  const banner = document.createElement('div');
+  banner.id = 'placing-mode-banner';
+  banner.style.cssText = `
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(22, 163, 74, 0.92);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 9990;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    font-family: Inter, sans-serif;
+    backdrop-filter: blur(8px);
+  `;
+  banner.innerHTML = `
+    📍 Platzier-Modus aktiv — Klicke ins Beet um eine Pflanze zu setzen
+    <button onclick="window._stopPlacingMode()" style="
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    ">✕ Beenden (ESC)</button>
+  `;
+  document.body.appendChild(banner);
+  window._stopPlacingMode = () => interaction.stopPlacingMode();
+}
+
+function _hidePlacingBanner() {
+  document.getElementById('placing-mode-banner')?.remove();
 }
 
 // ========== Start ==========
