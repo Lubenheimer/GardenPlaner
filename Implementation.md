@@ -1,6 +1,6 @@
 # Implementierungsplan: GardenPlaner V2
 
-Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026)
+Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026, 6.3 implementiert)
 
 ---
 
@@ -8,7 +8,6 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026)
 
 | Priorität | Feature | Abschnitt |
 |---|---|---|
-| 🔴 Mittel | Automatische Einkaufsliste (Check-off + CSV) | 6.3 |
 | 🟡 Mittel | Inter-Beet Mischkultur-Prüfung beim Pflanzen | 7.2 |
 | 🟡 Mittel | `prompt()` in Kontextmenü (Umbenennen) + GardenManager ersetzen | 7.x |
 | 🟢 Groß | Mobile-Optimierung (Pinch-to-Zoom, Touch) | 7.6 |
@@ -89,9 +88,13 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026)
 
 2. ✅ **Ernte-Protokoll** — `HarvestModal.js` (🧺-Button im BedEditor); `Store.addHarvest()`/`getHarvests()`; Dashboard-Aggregation nach Pflanze
 
-3. ❌ **Automatische Einkaufsliste** ⭐
-   Aktuell: Nur passiver Hinweistext im Dashboard für Pflanzungen mit Status `planned`.
-   **Offen:** Eigene `ShoppingList.js`-Komponente mit Check-off, Bearbeiten-Funktion und CSV-Export.
+3. ✅ **Automatische Einkaufsliste** 
+   `ShoppingList.js`-Komponente mit voller Funktionalität:
+   - Aggregiert geplante Pflanzungen nach Pflanzname (gleiche Pflanzen zusammengefasst)
+   - Zeigt: Sorte, Menge, betroffene Beete
+   - Für jede Pflanzung: Edit-Button → Modal zum Ändern von Menge, Sorte, Notizen
+   - CSV-Export-Button → `GardenPlaner-Einkaufsliste-YYYY-MM-DD.csv` für Ausdrucken/Excel
+   - Neuer Tab „🛒 Einkaufsliste" in der Hauptnavigation
 
 4. ✅ **Erweiterte Pflanzungserfassung** — PlantingModal mit Anzahl, Sorte/Varietät, Pflanzabstand (aus DB), geplantem Erntedatum
 
