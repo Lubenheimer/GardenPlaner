@@ -198,6 +198,40 @@ export function showPlantingModal(bedId) {
       }
     }
     
+    // 1b. Inter-Beet Mischkultur (Nachbarbeete innerhalb 150px)
+    const allBeds = store.getBeds();
+    const currentBedObj = store.getBed(bedId);
+    if (currentBedObj && (plant.badNeighbors?.length > 0 || plant.goodNeighbors?.length > 0)) {
+      const cx = currentBedObj.x + currentBedObj.width / 2;
+      const cy = currentBedObj.y + currentBedObj.height / 2;
+      const nearbyBadNames = [];
+      const nearbyGoodNames = [];
+      for (const otherBed of allBeds) {
+        if (otherBed.id === bedId) continue;
+        const ox = otherBed.x + otherBed.width / 2;
+        const oy = otherBed.y + otherBed.height / 2;
+        const dist = Math.sqrt((ox - cx) ** 2 + (oy - cy) ** 2);
+        if (dist > 150) continue;
+        const neighborPlantings = store.getPlantings(otherBed.id).filter(p => p.status !== 'harvest');
+        for (const np of neighborPlantings) {
+          if (plant.badNeighbors?.includes(np.name)) nearbyBadNames.push({ name: np.name, bed: otherBed.name });
+          if (plant.goodNeighbors?.includes(np.name)) nearbyGoodNames.push({ name: np.name, bed: otherBed.name });
+        }
+      }
+      if (nearbyBadNames.length > 0) {
+        const list = nearbyBadNames.map(n => `${n.name} (Beet „${n.bed}")`).join(', ');
+        html += `<div style="background: rgba(239, 68, 68, 0.1); color: var(--color-danger); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
+          ⚠️ <strong>Schlechter Nachbar (Nachbarbeet):</strong> In der Nähe wächst ${list} — schlechte Kombination!
+        </div>`;
+      }
+      if (nearbyGoodNames.length > 0) {
+        const list = nearbyGoodNames.map(n => `${n.name} (Beet „${n.bed}")`).join(', ');
+        html += `<div style="background: rgba(74, 222, 128, 0.1); color: var(--color-success); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
+          💚 <strong>Guter Nachbar (Nachbarbeet):</strong> In der Nähe wächst ${list} — profitiert voneinander!
+        </div>`;
+      }
+    }
+
     // 2. Fruchtfolge (Heavy feeder on heavy feeder)
     if (plant.nutrition === 'stark') {
       const previousHeavyFeeders = historyPlantings.filter(p => {
