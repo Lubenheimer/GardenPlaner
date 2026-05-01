@@ -8,8 +8,6 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026, 6.3 i
 
 | Priorität | Feature | Abschnitt |
 |---|---|---|
-| 🟡 Mittel | Inter-Beet Mischkultur-Prüfung beim Pflanzen | 7.2 |
-| 🟡 Mittel | `prompt()` in Kontextmenü (Umbenennen) + GardenManager ersetzen | 7.x |
 | 🟢 Groß | Mobile-Optimierung (Pinch-to-Zoom, Touch) | 7.6 |
 | 🟢 Groß | Erweiterter Jahresplan (tatsächlich vs. geplant im Gantt) | 7.7 |
 | ⚪ Vision | KI-Assistent / Auto-Layout | 7.8 |
@@ -119,12 +117,10 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026, 6.3 i
 
 1. ✅ **Mischkultur-Visualisierung auf Canvas** — `showCompanionRelationships` in CanvasRenderer; 🛡️-Toggle-Button in Toolbar; zeigt grüne/rote Verbindungslinien zwischen benachbarten Beeten (bis 1,5m)
 
-2. ❌ **Inter-Beet Mischkultur-Prüfung beim Pflanzen**
-   `PlantingModal.js` prüft aktuell nur Pflanzen *innerhalb* eines Beetes. Benachbarte Beete (Distanz < X Pixel) werden ignoriert.
-   **Umsetzung:** Distanzberechnung über Beet-Koordinaten in `PlantingModal.js` → Warnung „In Beet 'Tomaten' (50 cm entfernt) wächst Kartoffel — schlechter Nachbar!"
+2. ✅ **Inter-Beet Mischkultur-Prüfung beim Pflanzen**
+   `PlantingModal.js` prüft jetzt auch Pflanzen in Nachbarbeeten (Distanz < 150px, gleicher Threshold wie Canvas-Visualisierung). Zeigt rote Warnung bei schlechten Nachbarn und grüne Info bei guten Nachbarn in der Nähe.
 
-3. ✅ **Rechtsklick-Kontextmenü auf Canvas** — `_onContextMenu()` + `_showContextMenu()` in CanvasInteraction.js; Aktionen: Pflanzung hinzufügen, Fokus, Umbenennen, Duplizieren, Ebene wechseln, Löschen
-   > ⚠️ Umbenennen nutzt noch `window.prompt()` — sollte durch ein Inline-Input ersetzt werden
+3. ✅ **Rechtsklick-Kontextmenü auf Canvas** — `_onContextMenu()` + `_showContextMenu()` in CanvasInteraction.js; Aktionen: Pflanzung hinzufügen, Fokus, Umbenennen, Duplizieren, Ebene wechseln, Löschen. Umbenennen per Inline-Input (kein `window.prompt()` mehr); Enter = speichern, Escape = abbrechen.
 
 4. ✅ **Jahresstatistik-Ansicht** — `Statistics.js` mit KPI-Kacheln, Ernte-Ranking, Ausgaben-Charts, Status-Grid, Jahres-Selektor
 

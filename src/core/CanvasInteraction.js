@@ -658,19 +658,34 @@ export class CanvasInteraction {
     menu.querySelectorAll('.context-menu-item[data-action]').forEach(item => {
       item.addEventListener('click', () => {
         const action = item.dataset.action;
-        this._hideContextMenu();
+        if (action !== 'rename') this._hideContextMenu();
 
         if (action === 'plant') {
           bus.emit('bed:addPlanting', bed);
         } else if (action === 'focus') {
           this.renderer.focusBed(bed.id);
         } else if (action === 'rename') {
-          const newName = prompt('Neuer Name:', bed.name);
-          if (newName && newName.trim()) {
-            store.updateBed(bed.id, { name: newName.trim() });
-            this.renderer.render();
-            bus.emit('bed:selected', store.getBed(bed.id));
-          }
+          // Inline rename — replace menu item with input field
+          const renameItem = menu.querySelector('[data-action="rename"]');
+          renameItem.innerHTML = `<input id="ctx-rename-input" type="text" value="${bed.name.replace(/"/g, '&quot;')}" style="width:100%;padding:2px 4px;font-size:13px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-surface);color:var(--color-text);">`;
+          const inp = document.getElementById('ctx-rename-input');
+          inp.focus();
+          inp.select();
+          const commit = () => {
+            const val = inp.value.trim();
+            if (val) {
+              store.updateBed(bed.id, { name: val });
+              this.renderer.render();
+              bus.emit('bed:selected', store.getBed(bed.id));
+            }
+            this._hideContextMenu();
+          };
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); commit(); }
+            if (e.key === 'Escape') { this._hideContextMenu(); }
+          });
+          inp.addEventListener('blur', commit);
+          return; // keep menu open
         } else if (action === 'duplicate') {
           const offset = 20;
           const newBed = store.addBed({
