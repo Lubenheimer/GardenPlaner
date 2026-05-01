@@ -64,10 +64,13 @@ Das integrierte Gedächtnis deines Gartens — jetzt wetter-intelligent.
 - **Automatische Einkaufslisten:** Setzt du Pflanzen für die Zukunft auf „Geplant", erscheint ein Erinnerungs-Block auf dem Dashboard.
 - **🌱 Smarte Aussaat-Erinnerungen & Frost-Warnung:** Geplante Pflanzungen der nächsten 14 Tage (aus dem Gantt-Plan) erscheinen priorisiert im Aufgaben-Tab. Sinkt die lokale Temperatur in dieser Zeit auf ≤2 °C, warnt dich die App gezielt vor gefährlichem Nachtfrost — außer bei resistentem Wintergemüse.
 
-### 📅 8. Jahreskalender & Gantt-Diagramm
-Plane die gesamte Saison auf einen Blick.
+### 📅 8. Jahreskalender & Erweiterter Jahresplan (Gantt)
+Plane die gesamte Saison auf einen Blick — mit tatsächlichen Daten und Lücken-Analyse.
 - **Monatsansicht & Jahresplan:** Toggle zwischen klassischem Kalender und einem Gantt-Diagramm mit Phasen-Balken (🔵 Säen · 🟤 Wachsen · 🟢 Ernte).
 - **Beet-Gruppierung:** Pflanzen werden im Gantt nach Beet gruppiert, der aktuelle Monat hervorgehoben.
+- **Tatsächliche Daten als Overlay:** Hast du ein konkretes Pflanzdatum (`datePlanted`) oder ein erwartetes Erntedatum (`dateHarvestExpected`) erfasst, erscheint ein zweiter dünner Balken unterhalb der Katalog-Richtwerte — zeigt den realen Zeitraum auf einen Blick. Datumszeile direkt unter dem Pflanzennamen (📅 15.04. → 🧺 30.08.).
+- **Lücken-Analyse pro Beet:** Nach jeder Beet-Gruppe berechnet die App automatisch, welche Monate nicht belegt sind. Freie Monate werden als schraffierte Balken (`🔓 Lücken`) hervorgehoben.
+- **Nachkultur-Vorschläge:** Für jede Lücke schlägt die App bis zu 4 schnell wachsende Folgekulturen vor (≤ 90 Tage bis Ernte, passende Aussaatzeit) — direkt als Chips unter dem Lücken-Balken.
 
 ### 📊 9. Jahresstatistik
 Dein Garten auf einen Blick — Ernte, Kosten, Aufgaben.

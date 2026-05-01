@@ -129,8 +129,8 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026, 6.3 i
 6. ❌ **Mobile-Optimierung**
    Pinch-to-Zoom, bessere Touch-Targets, vereinfachte Ansicht für den Einsatz im Garten mit dem Smartphone.
 
-7. ❌ **Erweiterter Jahresplan**
-   Tatsächliche Pflanz- und Erntedaten als Overlay über den Katalog-Richtwerten im Gantt; Lücken-Analyse für Nachkulturen.
+7. ✅ **Erweiterter Jahresplan**
+   Tatsächliche Pflanz- und Erntedaten als Overlay-Balken über den Katalog-Richtwerten im Gantt; Datumszeile je Pflanze; Lücken-Analyse pro Beet mit schraffiertem Indikator; Nachkultur-Vorschläge (≤90 Tage, passende Säzeit) als Chips.
 
 8. ❌ **KI-Assistent (Auto-Layout)**
    Leeres Beet anlegen → „Generieren" → App befüllt es automatisch mit perfekt gematchten Mischkulturen basierend auf Beetgröße, Lichtverhältnissen und bereits geplanten Nachbarbeeten.
