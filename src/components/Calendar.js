@@ -1,59 +1,113 @@
 /**
  * Calendar — Monthly view + Jahres-Gantt (Saison-Übersicht)
+ * Feature 7: Erweiterter Jahresplan
+ *   - Tatsächliche Pflanz-/Erntedaten als Overlay über Katalog-Richtwerten
+ *   - Lücken-Analyse mit Nachkultur-Vorschlägen pro Beet
  */
 import { store } from '../core/Store.js';
-import { monthNames, getPlant } from '../data/plants.js';
+import { monthNames, getPlant, getAllPlants } from '../data/plants.js';
 import { statusEmojis } from '../utils/helpers.js';
 
 let currentYear  = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let calView = 'month'; // 'month' | 'gantt'
 
-// ── Hilfsfunktion: In welchen Monaten ist die Phase aktiv? ────────
-// Gibt ein Array [1..12] der Monate zurück, die zur Phase gehören.
+// ── Hilfsfunktion: Katalog-Phasen-Monate ─────────────────────────
 function getPhaseMonths(plant) {
   const sow     = plant.sowMonth     || [];
   const harvest = plant.harvestMonth || [];
-
-  // Säen-Phase
-  const sowSet = new Set(sow);
-
-  // Ernte-Phase
+  const sowSet     = new Set(sow);
   const harvestSet = new Set(harvest);
-
-  // Wachstums-Phase: Monate zwischen letztem Sämonat und erstem Erntemonat
-  const sowEnd   = sow.length     ? Math.max(...sow)     : null;
-  const hvStart  = harvest.length ? Math.min(...harvest) : null;
-  const growSet  = new Set();
+  const sowEnd  = sow.length     ? Math.max(...sow)     : null;
+  const hvStart = harvest.length ? Math.min(...harvest) : null;
+  const growSet = new Set();
   if (sowEnd && hvStart && hvStart > sowEnd) {
     for (let m = sowEnd + 1; m < hvStart; m++) growSet.add(m);
   }
-
   return { sowSet, growSet, harvestSet };
+}
+
+// ── Hilfsfunktion: Tatsächlichen Monats-Bereich aufbauen ─────────
+function buildActualRange(datePlanted, dateHarvestExpected) {
+  const startM = datePlanted        ? new Date(datePlanted).getMonth() + 1        : null;
+  const endM   = dateHarvestExpected ? new Date(dateHarvestExpected).getMonth() + 1 : null;
+  const monthSet = new Set();
+  if (startM && endM) {
+    for (let m = startM; m <= endM; m++) monthSet.add(m);
+  } else if (startM) {
+    monthSet.add(startM);
+  } else if (endM) {
+    monthSet.add(endM);
+  }
+  return { startM, endM, monthSet };
+}
+
+// ── Hilfsfunktion: Nachkultur-Vorschläge für Lücken-Monate ───────
+function getSuggestionsForGaps(gapMonths, existingNames) {
+  return getAllPlants()
+    .filter(p =>
+      !existingNames.has(p.name) &&
+      (p.daysToHarvest || 999) <= 90 &&
+      p.sowMonth?.some(m => gapMonths.has(m))
+    )
+    .sort((a, b) => (a.daysToHarvest || 999) - (b.daysToHarvest || 999))
+    .slice(0, 4);
+}
+
+// ── Katalog-Balken HTML erzeugen ─────────────────────────────────
+function renderCatalogBar(m, sowSet, growSet, harvestSet) {
+  if (sowSet.has(m)) {
+    const isStart = !sowSet.has(m - 1);
+    const isEnd   = !sowSet.has(m + 1) && !growSet.has(m + 1) && !harvestSet.has(m + 1);
+    const cls = isStart && isEnd ? 'range-only' : isStart ? 'range-start' : isEnd ? 'range-end' : '';
+    return `<div class="gantt-bar phase-sow ${cls}" title="Säen (Katalog-Richtwert)"></div>`;
+  } else if (growSet.has(m)) {
+    const isStart = !sowSet.has(m - 1) && !growSet.has(m - 1);
+    const isEnd   = !growSet.has(m + 1) && !harvestSet.has(m + 1);
+    const cls = isStart && isEnd ? 'range-only' : isStart ? 'range-start' : isEnd ? 'range-end' : '';
+    return `<div class="gantt-bar phase-grow ${cls}" title="Wachsen (Katalog-Richtwert)"></div>`;
+  } else if (harvestSet.has(m)) {
+    const isStart = !growSet.has(m - 1) && !harvestSet.has(m - 1) && !sowSet.has(m - 1);
+    const isEnd   = !harvestSet.has(m + 1);
+    const cls = isStart && isEnd ? 'range-only' : isStart ? 'range-start' : isEnd ? 'range-end' : '';
+    return `<div class="gantt-bar phase-harvest ${cls}" title="Ernte (Katalog-Richtwert)"></div>`;
+  }
+  return '';
 }
 
 // ── Gantt-Ansicht ─────────────────────────────────────────────────
 function renderGantt() {
   const plantings = store.getPlantings();
-  const nowMonth  = new Date().getMonth() + 1; // 1-12
+  const nowMonth  = new Date().getMonth() + 1;
 
-  // Pflanzen mit Katalog-Eintrag filtern und nach Beet gruppieren
+  // Pflanzen mit Katalog-Eintrag filtern; nach Beet gruppieren,
+  // tatsächliche Daten pro Pflanzenname aggregieren.
   const bedGroups = {};
   for (const p of plantings) {
     const plant = getPlant(p.name);
-    if (!plant) continue; // Kein Katalogeintrag → skip
-    const bed = store.getBed(p.bedId);
+    if (!plant) continue;
+    const bed     = store.getBed(p.bedId);
     const bedName = bed ? bed.name : 'Kein Beet';
-    if (!bedGroups[bedName]) bedGroups[bedName] = [];
-    // Duplikate innerhalb eines Beets überspringen
-    if (!bedGroups[bedName].find(x => x.name === p.name)) {
-      bedGroups[bedName].push({ ...plant, planting: p });
+    if (!bedGroups[bedName]) bedGroups[bedName] = {};
+
+    if (!bedGroups[bedName][p.name]) {
+      bedGroups[bedName][p.name] = { ...plant, datePlanted: null, dateHarvestExpected: null };
+    }
+
+    const entry = bedGroups[bedName][p.name];
+    // Frühestes Pflanz- und spätestes Erntedatum aggregieren
+    if (p.datePlanted) {
+      const d = new Date(p.datePlanted);
+      if (!entry.datePlanted || d < new Date(entry.datePlanted)) entry.datePlanted = p.datePlanted;
+    }
+    if (p.dateHarvestExpected) {
+      const d = new Date(p.dateHarvestExpected);
+      if (!entry.dateHarvestExpected || d > new Date(entry.dateHarvestExpected)) entry.dateHarvestExpected = p.dateHarvestExpected;
     }
   }
 
   const monthAbbr = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
-  // Header
   const header = `
     <div class="gantt-header">
       <div class="gantt-header-label">Pflanze</div>
@@ -63,7 +117,6 @@ function renderGantt() {
     </div>
   `;
 
-  // Rows
   let rows = '';
   const bedNames = Object.keys(bedGroups);
 
@@ -78,46 +131,115 @@ function renderGantt() {
   }
 
   for (const bedName of bedNames) {
-    const plants = bedGroups[bedName];
+    const plantsInBed = Object.values(bedGroups[bedName]);
     rows += `<div class="gantt-bed-header">📦 ${bedName}</div>`;
 
-    for (const plant of plants) {
+    const busyMonths = new Set(); // Für Lücken-Analyse
+
+    for (const plant of plantsInBed) {
       const { sowSet, growSet, harvestSet } = getPhaseMonths(plant);
+      const { startM: actualStartM, endM: actualEndM, monthSet: actualSet } =
+        buildActualRange(plant.datePlanted, plant.dateHarvestExpected);
+      const hasActual = actualSet.size > 0;
+
+      // Belegte Monate für Lücken-Analyse sammeln
+      if (hasActual && actualStartM && actualEndM) {
+        for (let m = actualStartM; m <= actualEndM; m++) busyMonths.add(m);
+      } else {
+        [...sowSet, ...growSet, ...harvestSet].forEach(m => busyMonths.add(m));
+      }
+
+      // Tooltips für tatsächliche Daten
+      const plantedStr = plant.datePlanted
+        ? new Date(plant.datePlanted).toLocaleDateString('de-DE')
+        : null;
+      const harvestStr = plant.dateHarvestExpected
+        ? new Date(plant.dateHarvestExpected).toLocaleDateString('de-DE')
+        : null;
 
       const cells = Array.from({ length: 12 }, (_, i) => {
         const m = i + 1;
         const isCurrent = m === nowMonth;
-        let barHtml = '';
 
-        if (sowSet.has(m)) {
-          const isStart = !sowSet.has(m - 1);
-          const isEnd   = !sowSet.has(m + 1) && !growSet.has(m + 1) && !harvestSet.has(m + 1);
-          const cls = isStart && isEnd ? 'range-only' : isStart ? 'range-start' : isEnd ? 'range-end' : '';
-          barHtml = `<div class="gantt-bar phase-sow ${cls}" title="Säen"></div>`;
-        } else if (growSet.has(m)) {
-          const isStart = !sowSet.has(m - 1) && !growSet.has(m - 1);
-          const isEnd   = !growSet.has(m + 1) && !harvestSet.has(m + 1);
-          const cls = isStart && isEnd ? 'range-only' : isStart ? 'range-start' : isEnd ? 'range-end' : '';
-          barHtml = `<div class="gantt-bar phase-grow ${cls}" title="Wachsen"></div>`;
-        } else if (harvestSet.has(m)) {
-          const isStart = !growSet.has(m - 1) && !harvestSet.has(m - 1) && !sowSet.has(m - 1);
-          const isEnd   = !harvestSet.has(m + 1);
-          const cls = isStart && isEnd ? 'range-only' : isStart ? 'range-start' : isEnd ? 'range-end' : '';
-          barHtml = `<div class="gantt-bar phase-harvest ${cls}" title="Ernte"></div>`;
+        const catalogBar = renderCatalogBar(m, sowSet, growSet, harvestSet);
+
+        let actualBar = '';
+        if (hasActual && actualSet.has(m)) {
+          const isStart = m === actualStartM;
+          const isEnd   = m === actualEndM;
+          const cls = isStart && isEnd ? 'actual-only'
+                    : isStart          ? 'actual-start'
+                    : isEnd            ? 'actual-end'
+                    : '';
+          const tip = [
+            plantedStr ? `📅 Gepflanzt: ${plantedStr}`    : '',
+            harvestStr ? `🧺 Ernte erw.: ${harvestStr}` : ''
+          ].filter(Boolean).join(' · ');
+          actualBar = `<div class="gantt-bar actual-bar ${cls}" title="${tip}"></div>`;
         }
 
-        return `<div class="gantt-cell ${isCurrent ? 'current-month' : ''}">${barHtml}</div>`;
+        return `<div class="gantt-cell ${isCurrent ? 'current-month' : ''}">${catalogBar}${actualBar}</div>`;
       }).join('');
 
+      // Datumszeile unterhalb des Pflanzennamens (nur wenn vorhanden)
+      const dateSubline = hasActual ? `
+        <span class="gantt-actual-dates">
+          ${plantedStr ? `📅 ${plantedStr}` : ''}${plantedStr && harvestStr ? ' → ' : ''}${harvestStr ? `🧺 ${harvestStr}` : ''}
+        </span>` : '';
+
       rows += `
-        <div class="gantt-row">
+        <div class="gantt-row ${hasActual ? 'has-actual' : ''}">
           <div class="gantt-plant-label">
             <span class="plant-emoji">${plant.emoji}</span>
-            <span>${plant.name}</span>
+            <div class="gantt-plant-info">
+              <span class="gantt-plant-name">${plant.name}</span>
+              ${dateSubline}
+            </div>
           </div>
           ${cells}
         </div>
       `;
+    }
+
+    // ── Lücken-Analyse pro Beet ────────────────────────────────────
+    const gapMonths = new Set();
+    for (let m = 1; m <= 12; m++) {
+      if (!busyMonths.has(m)) gapMonths.add(m);
+    }
+
+    if (gapMonths.size > 0 && gapMonths.size < 12) {
+      const existingNames  = new Set(plantsInBed.map(p => p.name));
+      const suggestions    = getSuggestionsForGaps(gapMonths, existingNames);
+
+      const gapCells = Array.from({ length: 12 }, (_, i) => {
+        const m     = i + 1;
+        const isGap = gapMonths.has(m);
+        return `<div class="gantt-cell ${m === nowMonth ? 'current-month' : ''}">
+          ${isGap ? '<div class="gantt-gap-bar"></div>' : ''}
+        </div>`;
+      }).join('');
+
+      rows += `
+        <div class="gantt-row gantt-gap-row">
+          <div class="gantt-plant-label gantt-gap-label">
+            <span>🔓 Lücken</span>
+          </div>
+          ${gapCells}
+        </div>
+      `;
+
+      if (suggestions.length > 0) {
+        rows += `
+          <div class="gantt-suggestion-row">
+            <span class="gantt-suggestion-label">💡 Mögliche Nachkulturen:</span>
+            ${suggestions.map(p => `
+              <span class="gantt-suggestion-chip" title="${p.daysToHarvest ? p.daysToHarvest + ' Tage bis Ernte' : ''}">
+                ${p.emoji} ${p.name}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      }
     }
   }
 
@@ -126,6 +248,8 @@ function renderGantt() {
       <span><span class="gantt-legend-dot" style="background:var(--color-accent)"></span>Säen</span>
       <span><span class="gantt-legend-dot" style="background:var(--color-primary);opacity:0.7"></span>Wachsen</span>
       <span><span class="gantt-legend-dot" style="background:var(--color-success)"></span>Ernte</span>
+      <span><span class="gantt-legend-dot gantt-legend-dot-actual"></span>Tatsächl. Zeitraum</span>
+      <span><span class="gantt-legend-dot gantt-legend-dot-gap"></span>Frei / Lücke</span>
       <span style="margin-left:auto; background:var(--color-primary-soft); padding: 2px 8px; border-radius: 4px; font-size: 11px; color:var(--color-primary);">▌ = Aktueller Monat</span>
     </div>
   `;
@@ -133,7 +257,7 @@ function renderGantt() {
   return `${legend}${header}${rows}`;
 }
 
-// ── Monatsansicht (bestehend) ─────────────────────────────────────
+// ── Monatsansicht ─────────────────────────────────────────────────
 function renderMonthView() {
   const plantings = store.getPlantings();
   const firstDay = new Date(currentYear, currentMonth, 1);
@@ -247,7 +371,6 @@ export function renderCalendar() {
     </div>
   `;
 
-  // Toggle-Buttons
   document.getElementById('cal-toggle-month')?.addEventListener('click', () => {
     if (calView === 'month') return;
     calView = 'month';
@@ -260,7 +383,6 @@ export function renderCalendar() {
     renderCalendar();
   });
 
-  // Monats-Navigation (nur im Monats-Modus)
   document.getElementById('cal-prev')?.addEventListener('click', () => {
     currentMonth--;
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
