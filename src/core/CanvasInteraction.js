@@ -814,6 +814,17 @@ export class CanvasInteraction {
         ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
+      } else if (this.tool === 'lshaped') {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + w * 0.5, y);
+        ctx.lineTo(x + w * 0.5, y + h * 0.5);
+        ctx.lineTo(x + w, y + h * 0.5);
+        ctx.lineTo(x + w, y + h);
+        ctx.lineTo(x, y + h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
       } else {
         ctx.beginPath();
         ctx.roundRect(x, y, w, h, 4);

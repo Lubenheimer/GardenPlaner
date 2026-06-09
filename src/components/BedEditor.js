@@ -105,8 +105,17 @@ export function renderBedEditor(bed) {
             <input type="number" class="form-input" id="bed-rotation" value="${bed.rotation || 0}" step="15">
           </div>
         </div>
-        <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">
-          <span>Form: ${bed.type === 'circle' ? '⭕ Rund' : bed.type === 'lshaped' ? '🔲 L-Form' : '▪️ Rechteck'}</span>
+        <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary); display: flex; align-items: center; gap: var(--space-sm);">
+          <span>Form:</span>
+          ${bed.type === 'circle' ? '<span>⭕ Rund</span>'
+            : bed.type === 'polygon' || bed.type === 'line' ? '<span>✏️ Freiform</span>'
+            : `<label style="display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;">
+                <div class="shadow-toggle-track ${bed.type === 'lshaped' ? 'shadow-toggle-on' : ''}" id="lshape-toggle">
+                  <div class="shadow-toggle-thumb"></div>
+                </div>
+                <span id="lshape-label" style="font-size:var(--font-size-sm);">${bed.type === 'lshaped' ? '🔲 L-Form' : '▪️ Rechteck'}</span>
+               </label>`
+          }
         </div>
       </div>
 
@@ -303,6 +312,15 @@ export function bindBedEditorEvents(bedId, handlers) {
 
   document.getElementById('bed-sunlight-select')?.addEventListener('change', (e) => {
     store.updateBed(bedId, { sunlight: e.target.value });
+    handlers.onUpdate?.();
+  });
+
+  // L-Form toggle (nur für rect/lshaped)
+  document.getElementById('lshape-toggle')?.addEventListener('click', () => {
+    const current = store.getBed(bedId);
+    if (!current) return;
+    const newType = current.type === 'lshaped' ? 'rect' : 'lshaped';
+    store.updateBed(bedId, { type: newType });
     handlers.onUpdate?.();
   });
 
