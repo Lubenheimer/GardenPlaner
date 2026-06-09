@@ -1,6 +1,6 @@
 # Implementierungsplan: GardenPlaner V2
 
-Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026, 6.3 implementiert)
+Letzte Aktualisierung: Juni 2026 (Abgeglichen mit Code-Stand: 09.06.2026, Feature 7 implementiert)
 
 ---
 
@@ -9,8 +9,16 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026, 6.3 i
 | Priorität | Feature | Abschnitt |
 |---|---|---|
 | 🟢 Groß | Mobile-Optimierung (Pinch-to-Zoom, Touch) | 7.6 |
-| 🟢 Groß | Erweiterter Jahresplan (tatsächlich vs. geplant im Gantt) | 7.7 |
 | ⚪ Vision | KI-Assistent / Auto-Layout | 7.8 |
+| 🔵 Neu | KI-Pflanzenerkennung (Foto → Krankheit/Schädling) | 9.1 |
+| 🔵 Neu | Samenbank-Verwaltung | 9.2 |
+| 🔵 Neu | Kalender-Export (iCal / .ics) | 9.3 |
+| 🔵 Neu | Garten-Tagebuch / Journal | 9.4 |
+| 🔵 Neu | Schädlings- & Krankheitsdatenbank | 9.5 |
+| 🔵 Neu | Jahresvergleich (Saison A vs. B) | 9.6 |
+| 🔵 Neu | PWA + Push-Benachrichtigungen | 9.7 |
+| 🔵 Neu | Saatgut-Tauschbörse (Community) | 9.8 |
+| 🔵 Neu | Bodenanalyse-Tracker | 9.9 |
 
 ---
 
@@ -137,7 +145,73 @@ Letzte Aktualisierung: April 2026 (Abgeglichen mit Code-Stand: 20.04.2026, 6.3 i
 
 ---
 
-## ☁️ 8. Cloud & SaaS — BEWUSST ZURÜCKGESTELLT
+## 🌱 9. Neue Feature-Ideen — BACKLOG
+
+### 🔥 Hoher Nutzen, machbar
+
+#### 9.1 ❌ KI-Pflanzenerkennung
+Foto von Pflanze oder Blatt hochladen → Claude Vision API erkennt Krankheiten, Schädlinge oder die Pflanzensorte selbst. Ergebnis inkl. Behandlungsempfehlung direkt im Foto-Tab oder BedEditor.
+- **Input:** Bild-Upload (bestehender Foto-Tab)
+- **API:** Claude API mit Vision (Multimodal)
+- **Output:** Name des Problems + organische Gegenmaßnahmen + betroffene Pflanzung verknüpfen
+
+#### 9.2 ❌ Samenbank-Verwaltung
+Eigene Saatgutvorräte tracken — unabhängig von aktiven Pflanzungen.
+- Felder: Sorte, Pflanze, Erntejahr/Kaufjahr, Menge (g/Stück), Haltbarkeit bis, Herkunft (selbst gezogen / gekauft)
+- Automatische Warnung wenn Saatgut in 0–3 Monaten abläuft
+- Verknüpfung mit Einkaufsliste: „Vorrat aufbrauchen" statt nachkaufen
+
+#### 9.3 ❌ Kalender-Export (iCal / .ics)
+Pflanztermine, Gießerinnerungen und Erntetermine als `.ics`-Datei exportieren.
+- Direkt importierbar in Apple Kalender, Google Calendar, Outlook
+- Export-Button im Kalender-Tab und Aufgaben-Tab
+- Einzel-Event pro Pflanzung oder gebündelter Tages-Event
+
+#### 9.4 ❌ Garten-Tagebuch / Journal
+Chronologisches Tagebuch mit Einträgen pro Tag/Ereignis.
+- Felder: Datum, freier Text, optionales Foto, Wetter (auto-befüllt), verknüpfte Beete/Pflanzen
+- Timeline-Ansicht pro Beet oder gesamt
+- Durchsuchbar und filterbar nach Saison
+
+---
+
+### 🧪 Mittlerer Aufwand
+
+#### 9.5 ❌ Schädlings- & Krankheitsdatenbank
+Eingebaute Datenbank häufiger Gartenprobleme.
+- Einträge: Name, Erkennungsmerkmale, betroffene Pflanzen, organische Gegenmaßnahmen
+- Verknüpft mit Pflanzenkatalog: „Tomate → häufige Probleme: Braunfäule, Tomatenmosaik"
+- Manueller Alert: „Ich habe Befall festgestellt" → Task wird automatisch erstellt
+
+#### 9.6 ❌ Jahresvergleich (Saison A vs. B)
+Zwei Saisons nebeneinander in der Statistik vergleichen.
+- Erntemenge Saison 2025 vs. 2026 pro Pflanze
+- Ausgaben-Vergleich, Aufgaben-Erledigungsquote
+- Welche Beete haben besser performt?
+
+#### 9.7 ❌ PWA + Push-Benachrichtigungen
+App als Progressive Web App installierbar (Homescreen-Icon, Offline-Betrieb).
+- `manifest.json` + Service Worker
+- Web Push API für echte Gieß- und Ernte-Erinnerungen auf dem Smartphone
+- Kombinierbar mit Mobile-Optimierung (7.6)
+
+---
+
+### 💡 Längerfristig / Vision
+
+#### 9.8 ❌ Saatgut-Tauschbörse (Community)
+Lokale Community-Funktion: wer hat welches Saatgut übrig, wer sucht was?
+- Erfordert optionale Cloud-Anbindung (→ Abschnitt 10)
+- PLZ-basierte Suche, Kontaktaufnahme per E-Mail
+
+#### 9.9 ❌ Bodenanalyse-Tracker
+pH-Wert, Hauptnährstoffe (N/P/K) und Bodenfeuchte manuell erfassen und über Saisons verfolgen.
+- Verlaufsdiagramm pro Beet
+- Düngeempfehlungen basierend auf aktuellen Messwerten und geplanten Pflanzen
+
+---
+
+## ☁️ 10. Cloud & SaaS — BEWUSST ZURÜCKGESTELLT
 
 Erst relevant wenn das Tool vermarktet werden soll:
 

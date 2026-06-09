@@ -123,3 +123,34 @@ Deine Daten gehören dir. Alles bleibt lokal gesichert.
 - **Dual-Write:** Sofort-Sicherung in localStorage als Cache, debounced Server-Push für Persistenz.
 - **Server-Status-Indikator:** Farbiger Punkt zeigt an, ob lokale DB verbunden (grün) oder nur Browser-Speicher aktiv (grau).
 - **Einfacher Windows-Start:** Doppelklick auf `Start GartenPlaner.bat` startet Server und Browser.
+
+---
+
+## 🔭 Geplante Features (Backlog)
+
+### 📸 KI-Pflanzenerkennung
+Foto von Pflanze oder Blatt hochladen → KI erkennt Krankheiten, Schädlinge oder die Sorte selbst. Direkte Behandlungsempfehlung, verknüpft mit der betroffenen Pflanzung.
+
+### 🌱 Samenbank-Verwaltung
+Eigene Saatgutvorräte tracken: Sorte, Haltbarkeit, Menge, Herkunft. Automatische Warnung wenn Saatgut bald abläuft — verknüpft mit der Einkaufsliste.
+
+### 📆 Kalender-Export (iCal)
+Pflanztermine, Gießerinnerungen und Erntedaten als `.ics`-Datei exportieren — direkt importierbar in Apple Kalender, Google Calendar und Outlook.
+
+### 🗒️ Garten-Tagebuch
+Chronologisches Journal: Einträge mit Datum, Text, Foto und Wetter, verknüpft mit Beeten und Pflanzen. Timeline-Ansicht pro Saison.
+
+### 🪲 Schädlings- & Krankheitsdatenbank
+Eingebaute Datenbank häufiger Gartenprobleme mit Erkennungsmerkmalen, betroffenen Pflanzen und organischen Gegenmaßnahmen.
+
+### 📊 Jahresvergleich
+Zwei Saisons nebeneinander: Erntemengen, Ausgaben und Aufgaben-Erledigungsquote im direkten Vergleich.
+
+### 🔔 PWA + Push-Benachrichtigungen
+App als Progressive Web App installierbar (Homescreen, Offline). Echte Gieß- und Ernte-Erinnerungen direkt aufs Smartphone.
+
+### 🤝 Saatgut-Tauschbörse
+Lokale Community-Funktion: Saatgut anbieten und suchen, PLZ-basiert — erfordert optionale Cloud-Anbindung.
+
+### 🧪 Bodenanalyse-Tracker
+pH-Wert und Nährstoffe (N/P/K) manuell erfassen und über Saisons verfolgen — mit Düngeempfehlungen je Beet.
