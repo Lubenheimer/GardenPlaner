@@ -10,8 +10,10 @@ Analysierter Umfang: alle 23 JS-Dateien in `src/` und `server/` (~8.300 Zeilen).
 ## 🔴 Kritisch — Datenverlust oder Kernfunktion defekt
 
 ### #1 — Undo nach Beet-Löschen verliert Pflanzungen & Fotos unwiderruflich
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Dateien:** `src/core/Store.js:68` (`_pushHistory`), `src/core/Store.js:383` (`deleteBed`)
+
+> **Umsetzung:** History-Snapshot umfasst jetzt `beds` + `plantings` + Foto-Zuordnungen (`photoLinks`, nur id→bedId statt Bilddaten — kein Speicher-Overhead). `deleteBed` löscht Fotos nicht mehr, sondern setzt nur `bedId: null`; Undo stellt die Zuordnung wieder her. Funktional verifiziert: Löschen + Undo → Beet, Pflanzung und Foto-Zuordnung vollständig zurück.
 
 Die Undo-History speichert ausschließlich das `beds`-Array (`JSON.stringify(this._active().beds)`).
 `deleteBed()` löscht jedoch zusätzlich alle Pflanzungen (`plantings`) und Fotos (`photos`) des Beets.
@@ -23,8 +25,10 @@ Nach Löschen + Ctrl+Z wird nur die leere Beet-Hülle wiederhergestellt — Pfla
 ---
 
 ### #2 — Delete/Backspace löscht Beet ohne Bestätigung, auch bei fokussiertem Dropdown
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/main.js:490-533` (globaler `keydown`-Handler)
+
+> **Umsetzung:** Early-Return erweitert um `SELECT` und `isContentEditable`; vor dem Löschen per Shortcut erscheint jetzt `confirm("…wirklich löschen?")` (konsistent mit dem Kontextmenü). Verifiziert: Backspace bei fokussiertem Dropdown löscht nichts mehr.
 
 Der Handler schließt nur `INPUT` und `TEXTAREA` aus — nicht `SELECT`.
 Wer im Eigenschaften-Panel ein Dropdown (Boden, Ebene, Sonnenlicht …) fokussiert hat und Backspace/Delete drückt, löscht kommentarlos das gesamte Beet. In Kombination mit Issue #1 sind dann auch alle Pflanzungen weg.
@@ -34,8 +38,10 @@ Wer im Eigenschaften-Panel ein Dropdown (Boden, Ebene, Sonnenlicht …) fokussie
 ---
 
 ### #3 — macOS: Cmd+Z / Cmd+C / Cmd+V funktionieren nicht; Ctrl+Shift+Z (Redo) feuert nie
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/main.js:494-526`
+
+> **Umsetzung:** `const mod = e.ctrlKey || e.metaKey` für alle Shortcuts; `e.key.toLowerCase()` normalisiert den Shift-Großbuchstaben. Verifiziert mit synthetischen Events: Cmd+Z macht rückgängig, Cmd+Shift+Z (Key `'Z'`) stellt wieder her.
 
 1. Alle Shortcuts prüfen nur `e.ctrlKey`, nie `e.metaKey` → auf dem Mac (Primärplattform des Entwicklers!) gehen Cmd-Shortcuts ins Leere.
 2. Redo-Check: `e.key === 'y' || (e.shiftKey && e.key === 'z')` — mit gedrücktem Shift liefert der Browser `e.key === 'Z'` (Großbuchstabe). Die Bedingung ist nie wahr; Ctrl+Shift+Z macht nichts.

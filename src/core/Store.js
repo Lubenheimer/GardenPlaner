@@ -64,10 +64,41 @@ class Store {
   }
 
   // ── History (Undo/Redo) ────────────────────────────────────────────
+  // Snapshot umfasst beds + plantings + Foto-Zuordnungen (nur id→bedId,
+  // nicht die Bilddaten), damit Undo nach deleteBed nichts verliert.
+
+  _snapshot() {
+    const a = this._active();
+    return JSON.stringify({
+      beds:       a.beds,
+      plantings:  a.plantings,
+      photoLinks: (a.photos || []).map(p => ({ id: p.id, bedId: p.bedId })),
+    });
+  }
+
+  _restoreSnapshot(json) {
+    const snap = JSON.parse(json);
+    const a = this._active();
+    // Altes Format (reines beds-Array) tolerieren
+    if (Array.isArray(snap)) {
+      a.beds = snap;
+    } else {
+      a.beds      = snap.beds      || a.beds;
+      a.plantings = snap.plantings || a.plantings;
+      const linkMap = new Map((snap.photoLinks || []).map(l => [l.id, l.bedId]));
+      (a.photos || []).forEach(p => {
+        if (linkMap.has(p.id)) p.bedId = linkMap.get(p.id);
+      });
+    }
+    this.save();
+    bus.emit('beds:changed', a.beds);
+    bus.emit('plantings:changed', a.plantings);
+    bus.emit('photos:changed', a.photos);
+  }
 
   _pushHistory() {
     if (this._historyLocked) return;
-    this._history.push(JSON.stringify(this._active().beds));
+    this._history.push(this._snapshot());
     if (this._history.length > this._historyMax) this._history.shift();
     this._future = [];
   }
@@ -86,18 +117,14 @@ class Store {
 
   undo() {
     if (!this.canUndo()) return;
-    this._future.push(JSON.stringify(this._active().beds));
-    this._active().beds = JSON.parse(this._history.pop());
-    this.save();
-    bus.emit('beds:changed', this._active().beds);
+    this._future.push(this._snapshot());
+    this._restoreSnapshot(this._history.pop());
   }
 
   redo() {
     if (!this.canRedo()) return;
-    this._history.push(JSON.stringify(this._active().beds));
-    this._active().beds = JSON.parse(this._future.pop());
-    this.save();
-    bus.emit('beds:changed', this._active().beds);
+    this._history.push(this._snapshot());
+    this._restoreSnapshot(this._future.pop());
   }
 
   _clearHistory() {
@@ -385,7 +412,8 @@ class Store {
     const active = this._active();
     active.beds      = active.beds.filter(b => b.id !== id);
     active.plantings = active.plantings.filter(p => p.bedId !== id);
-    active.photos    = active.photos.filter(p => p.bedId !== id);
+    // Fotos nicht löschen — nur Zuordnung aufheben (Undo stellt sie wieder her)
+    active.photos.forEach(p => { if (p.bedId === id) p.bedId = null; });
     this.save();
     bus.emit('beds:changed', active.beds);
     bus.emit('bed:deleted', id);

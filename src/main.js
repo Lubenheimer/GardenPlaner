@@ -488,16 +488,23 @@ function initEvents() {
 
   // Keyboard
   document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // Eingabefelder aller Art ausnehmen (auch Dropdowns & contenteditable)
+    const t = e.target;
+    if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) return;
+
+    // Cmd (macOS) und Ctrl (Windows/Linux) gleichbehandeln;
+    // e.key ist bei gedrücktem Shift ein Großbuchstabe → normalisieren
+    const mod = e.ctrlKey || e.metaKey;
+    const key = e.key.toLowerCase();
 
     // Undo / Redo
-    if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+    if (mod && !e.shiftKey && key === 'z') {
       e.preventDefault();
       store.undo();
       _updateUndoRedoButtons();
       return;
     }
-    if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+    if (mod && (key === 'y' || (e.shiftKey && key === 'z'))) {
       e.preventDefault();
       store.redo();
       _updateUndoRedoButtons();
@@ -505,13 +512,13 @@ function initEvents() {
     }
 
     // Copy / Paste
-    if (e.ctrlKey && e.key === 'c' && renderer.selectedBedId) {
+    if (mod && key === 'c' && renderer.selectedBedId) {
       e.preventDefault();
       const bed = store.getBed(renderer.selectedBedId);
       if (bed) _clipboard = JSON.parse(JSON.stringify(bed));
       return;
     }
-    if (e.ctrlKey && e.key === 'v' && _clipboard) {
+    if (mod && key === 'v' && _clipboard) {
       e.preventDefault();
       const newBed = store.addBed({
         ..._clipboard,
@@ -526,10 +533,14 @@ function initEvents() {
     }
 
     if ((e.key === 'Delete' || e.key === 'Backspace') && renderer.selectedBedId) {
-      store.deleteBed(renderer.selectedBedId);
-      renderer.selectedBedId = null;
-      closeRightPanel();
-      renderer.render();
+      e.preventDefault();
+      const bed = store.getBed(renderer.selectedBedId);
+      if (bed && confirm(`"${bed.name}" wirklich löschen?`)) {
+        store.deleteBed(bed.id);
+        renderer.selectedBedId = null;
+        closeRightPanel();
+        renderer.render();
+      }
     }
 
     if (e.key === 'Escape') {
