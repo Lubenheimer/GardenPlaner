@@ -357,7 +357,10 @@ export function showPlantingModal(bedId) {
       return;
     }
 
-    const plant = selectedPlant || getPlant(name) || { name, emoji: '🌱', category: '' };
+    // Katalog-Daten (inkl. isPerennial) immer per Name nachschlagen — `selectedPlant`
+    // aus der Autocomplete-Auswahl enthält nur name/emoji/category und würde sonst
+    // z.B. isPerennial stillschweigend auf false zurücksetzen.
+    const plant = getPlant(name) || selectedPlant || { name, emoji: '🌱', category: '' };
     const quantityVal = parseInt(document.getElementById('plant-quantity-input').value);
     const spacingVal = parseInt(spacingInput.value);
 

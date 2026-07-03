@@ -174,6 +174,30 @@ function openPlantEditor(existingPlant = null) {
         </div>
       </div>
 
+      <div class="form-group" style="margin-top: 10px;">
+        <label>Aussaat-Monate</label>
+        <div class="cp-month-grid">
+          ${monthNames.map((m, i) => `
+            <label class="cp-month-chip">
+              <input type="checkbox" class="cp-sow-month" value="${i + 1}" ${(p.sowMonth || []).includes(i + 1) ? 'checked' : ''}>
+              ${m.slice(0, 3)}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 10px;">
+        <label>Ernte-Monate</label>
+        <div class="cp-month-grid">
+          ${monthNames.map((m, i) => `
+            <label class="cp-month-chip">
+              <input type="checkbox" class="cp-harvest-month" value="${i + 1}" ${(p.harvestMonth || []).includes(i + 1) ? 'checked' : ''}>
+              ${m.slice(0, 3)}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+
       <div class="form-group" style="margin-top: 15px;">
         <button id="save-custom-plant" class="btn primary" style="width:100%">Pflanze speichern</button>
       </div>
@@ -188,7 +212,10 @@ function openPlantEditor(existingPlant = null) {
     const name = document.getElementById('cp-name').value.trim();
     if (!name) return alert('Name fehlt!');
 
-    const newPlant = {
+    const sowMonth = Array.from(document.querySelectorAll('.cp-sow-month:checked')).map(el => parseInt(el.value, 10));
+    const harvestMonth = Array.from(document.querySelectorAll('.cp-harvest-month:checked')).map(el => parseInt(el.value, 10));
+
+    const formFields = {
       name: name,
       emoji: document.getElementById('cp-emoji').value || '🌱',
       category: document.getElementById('cp-category').value,
@@ -198,14 +225,24 @@ function openPlantEditor(existingPlant = null) {
       daysToHarvest: parseInt(document.getElementById('cp-days').value, 10) || 60,
       waterDays: parseInt(document.getElementById('cp-water').value, 10) || 3,
       fertilizeWeeks: parseInt(document.getElementById('cp-fert').value, 10) || 2,
+      sowMonth,
+      harvestMonth,
     };
+
+    // Bei System-Pflanzen-Override: alle Katalogfelder (goodNeighbors, badNeighbors,
+    // preferredSoil, …) aus der Ausgangspflanze übernehmen, damit ein Override sie
+    // nicht stillschweigend löscht. Formularfelder haben Vorrang.
+    const newPlant = isEdit ? { ...p, ...formFields } : formFields;
+    // isSystem/isCustom sind reine Laufzeit-Flags, nicht persistieren
+    delete newPlant.isSystem;
+    delete newPlant.isCustom;
 
     if (isEdit) {
       store.updateCustomPlant(p.name, newPlant);
     } else {
       store.addCustomPlant(newPlant);
     }
-    
+
     overlay.classList.add('hidden');
     renderCatalog();
   };

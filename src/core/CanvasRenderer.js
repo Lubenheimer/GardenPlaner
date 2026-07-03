@@ -282,10 +282,12 @@ export class CanvasRenderer {
 
     if (this.showCompanionRelationships) {
       this._drawCompanionRelationships(this.ctx);
-      // Trigger continuous animation for the energy flows 
-      if (!this.animationFrameLooping) {
-        requestAnimationFrame(() => this._draw());
-      }
+      // Kontinuierliche Animation der Energie-Flüsse: über render() verkettet,
+      // damit nur EIN rAF-Handle existiert (this.animationFrame). Jeder externe
+      // render()-Aufruf (Hover, Drag, Zoom …) canceled/ersetzt diesen Handle statt
+      // eine zusätzliche parallele Kette zu starten. Stoppt automatisch, sobald
+      // showCompanionRelationships wieder false ist.
+      this.render();
     }
 
     for (const c of allCanvases) {

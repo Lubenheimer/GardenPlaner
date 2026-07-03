@@ -51,7 +51,7 @@ Wer im Eigenschaften-Panel ein Dropdown (Boden, Ebene, Sonnenlicht …) fokussie
 ---
 
 ### #4 — System-Pflanze bearbeiten zerstört Katalogdaten (sowMonth, Nachbarn, Boden)
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Dateien:** `src/components/Catalog.js:187-211` (`save-custom-plant`), `src/data/plants.js:133-142` (`getAllPlants`)
 
 Beim Speichern im Pflanzen-Editor wird `newPlant` nur aus den Formularfeldern gebaut:
@@ -69,10 +69,12 @@ Features.md verspricht: „das Original bleibt als Fallback in der Datenbank erh
 
 **Fix-Idee:** Beim System-Override die fehlenden Felder aus der System-Pflanze mergen (`{ ...systemPlant, ...newPlant }`); Monatsauswahl-UI im Editor ergänzen.
 
+> **Umsetzung:** Editor bekommt zwei Monats-Checkbox-Grids (Aussaat/Ernte, vorbelegt aus dem Katalog). Beim Speichern: `isEdit ? { ...p, ...formFields } : formFields` — alle bestehenden Katalogfelder (`goodNeighbors`, `badNeighbors`, `preferredSoil`, …) bleiben erhalten, nur die Formularfelder werden überschrieben. Verifiziert über echten UI-Flow: Tomate-Spacing auf 60 geändert und gespeichert → Nachbarn, Bodenpräferenz und Monate unverändert vorhanden.
+
 ---
 
 ### #5 — Mischkultur-Modus: unbegrenzt wachsende requestAnimationFrame-Schleifen
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/core/CanvasRenderer.js:283-289` (`_draw`)
 
 ```js
@@ -92,6 +94,8 @@ Nach einigen Minuten Interaktion laufen Dutzende parallele Render-Schleifen → 
 
 **Fix-Idee:** Flag tatsächlich setzen/zurücksetzen, oder die Animationsschleife über den bestehenden `render()`-Mechanismus mit `cancelAnimationFrame` führen.
 
+> **Umsetzung:** Direkter `requestAnimationFrame`-Aufruf durch `this.render()` ersetzt — nutzt den bestehenden `cancelAnimationFrame`/`animationFrame`-Handle, sodass immer nur eine einzige Kette existiert; externe `render()`-Aufrufe (Hover, Drag) ersetzen den Handle statt eine zusätzliche Kette zu starten. Verifiziert: während aktiv konstant ~60 rAF-Calls/Sekunde (eine Kette), nach dem Ausschalten sofort 0 rAF-Calls — keine Restschleife.
+
 ---
 
 ## 🟠 Mittel — Funktionsfehler
@@ -107,7 +111,7 @@ Die Hit-Erkennung der Griffe (`getHandleAtPosition`) transformiert den Mauspunkt
 ---
 
 ### #7 — Stauden-Flag (isPerennial) geht bei Autocomplete-Auswahl verloren
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/components/PlantingModal.js:311-324` und `:360`
 
 Bei Klick auf einen Autocomplete-Eintrag wird `selectedPlant` nur aus `dataset.name/emoji/category` gebaut — ohne `isPerennial`. Beim Speichern gilt `const plant = selectedPlant || …`, also gewinnt das unvollständige Objekt: `isPerennial: plant.isPerennial || false` → immer `false`.
@@ -115,6 +119,8 @@ Bei Klick auf einen Autocomplete-Eintrag wird `selectedPlant` nur aus `dataset.n
 **Folge:** Apfelbaum, Erdbeere, Spargel etc. aus dem Katalog werden nicht als mehrjährig angelegt und beim Saisonwechsel **nicht** in die neue Saison geklont (Kernversprechen des Saison-Systems).
 
 **Fix-Idee:** Beim Speichern immer `getPlant(name)` als Quelle für Katalog-Metadaten nutzen.
+
+> **Umsetzung:** Priorität beim Speichern umgedreht: `getPlant(name) || selectedPlant || { name, emoji: '🌱', category: '' }` statt `selectedPlant || getPlant(name) || …`. Verifiziert über echten UI-Flow: Erdbeere per Autocomplete ausgewählt und gespeichert → `isPerennial: true` (vorher `false`).
 
 ---
 
