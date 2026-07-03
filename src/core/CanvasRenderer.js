@@ -31,6 +31,7 @@ export class CanvasRenderer {
     this.hoveredBedId = null;
     this.draggingBedId = null;
     this.draggingPlantId = null;  // ID of planting being dragged within placing mode
+    this.draggingPlantPos = null; // { px, py } local-only position while dragging (Issue #12)
     this.placingBedId = null;     // ID of bed currently in placing mode
     this.animationFrame = null;
 
@@ -566,10 +567,12 @@ export class CanvasRenderer {
     const fontSize  = Math.max(10, 14 / Math.max(this.zoom, 0.4));
 
     positioned.forEach(p => {
-      const wx = bed.x + p.position.px * bed.width;
-      const wy = bed.y + p.position.py * bed.height;
-
       const isDragged = this.draggingPlantId === p.id;
+      // Während des Ziehens die nur lokal gehaltene Position nutzen (siehe
+      // CanvasInteraction._onMouseMove) statt der noch alten Store-Position.
+      const pos = (isDragged && this.draggingPlantPos) ? this.draggingPlantPos : p.position;
+      const wx = bed.x + pos.px * bed.width;
+      const wy = bed.y + pos.py * bed.height;
 
       ctx.save();
 
@@ -741,7 +744,7 @@ export class CanvasRenderer {
       return ((pX - cx) ** 2) / (rx ** 2) + ((pY - cy) ** 2) / (ry ** 2) <= 1;
     }
     
-    if (bed.type === 'polygon' && bed.points) {
+    if ((bed.type === 'polygon' || bed.type === 'line') && bed.points) {
       if (!bed.isClosed) {
         // Distance to line segments for open paths
         for (let i = 0; i < bed.points.length - 1; i++) {

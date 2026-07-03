@@ -53,14 +53,26 @@ const defaultState = {
 
 class Store {
   constructor() {
-    this.state          = this.load();
-    this.nextId         = this._calculateNextId();
-    this._saveTimer     = null;
-    this._serverOnline  = false;
-    this._history       = [];
-    this._future        = [];
-    this._historyMax    = 30;
-    this._historyLocked = false;
+    this.state              = this.load();
+    this.nextId             = this._calculateNextId();
+    this._saveTimer         = null;
+    this._localSaveTimer    = null;
+    this._serverOnline      = false;
+    this._history           = [];
+    this._future            = [];
+    this._historyMax        = 30;
+    this._historyLocked     = false;
+    this._lastHistoryPushAt = 0;
+    this._quotaExceeded     = false;
+
+    // Sicherstellen, dass ein debouncter localStorage-Write beim Schließen
+    // des Tabs nicht verloren geht (siehe save()/_writeLocalStorage()).
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        clearTimeout(this._localSaveTimer);
+        this._writeLocalStorage();
+      });
+    }
   }
 
   // ── History (Undo/Redo) ────────────────────────────────────────────
@@ -98,9 +110,19 @@ class Store {
 
   _pushHistory() {
     if (this._historyLocked) return;
+    const now = Date.now();
+    // Schnell aufeinanderfolgende Updates (z.B. jeder Tastendruck im Namensfeld)
+    // zu EINEM Undo-Schritt zusammenfassen, statt die History-Kapazität mit
+    // Zwischenzuständen zu fluten. Die älteste (Vor-Tipp-Burst) Momentaufnahme
+    // bleibt dabei erhalten, da wir nur nachfolgende Pushes überspringen.
+    if (this._history.length > 0 && (now - this._lastHistoryPushAt) < 500) {
+      this._lastHistoryPushAt = now;
+      return;
+    }
     this._history.push(this._snapshot());
     if (this._history.length > this._historyMax) this._history.shift();
     this._future = [];
+    this._lastHistoryPushAt = now;
   }
 
   lockHistory() {
@@ -217,18 +239,36 @@ class Store {
   }
 
   /**
-   * Speichert sofort in localStorage (synchron) und
-   * plant asynchron einen debounced Server-Push.
+   * Plant einen debounced localStorage-Write (150ms) und einen debounced
+   * Server-Push (600ms). this.state bleibt jederzeit im Speicher konsistent —
+   * nur die Persistenz ist leicht verzögert. Ohne Debounce würde z.B. jede
+   * Mausbewegung beim Ziehen/Resizen eines Beets den kompletten State
+   * (inkl. aller Base64-Fotos) synchron serialisieren und spürbar ruckeln.
    */
   save() {
-    // 1. localStorage — sofort, synchron (Fallback & Cache)
+    clearTimeout(this._localSaveTimer);
+    this._localSaveTimer = setTimeout(() => this._writeLocalStorage(), 150);
+    this._scheduleSave();
+  }
+
+  _writeLocalStorage() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      // Quota-Fehler behoben (z.B. nach Foto-Löschung) → Warnbanner ausblenden
+      if (this._quotaExceeded) {
+        this._quotaExceeded = false;
+        bus.emit('storage:quota-ok');
+      }
     } catch (e) {
       console.warn('localStorage-Fehler:', e);
+      // Bisher schlug ein voller localStorage (typisch durch viele Base64-Fotos)
+      // still fehl — nur console.warn, kein UI-Hinweis. Der Nutzer bemerkte den
+      // Datenverlust erst nach dem nächsten Reload. Jetzt sichtbar per Bus-Event.
+      if (!this._quotaExceeded) {
+        this._quotaExceeded = true;
+        bus.emit('storage:quota-exceeded', e);
+      }
     }
-    // 2. Server — debounced, nicht-blockierend
-    this._scheduleSave();
   }
 
   _scheduleSave() {

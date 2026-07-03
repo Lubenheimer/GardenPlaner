@@ -87,6 +87,43 @@ export const bedColors = [
 ];
 
 /**
+ * Berechnet die Fläche eines Beets in cm² — formabhängig, da width×height
+ * für Kreise (+27%) und L-Formen (+25%, Aussparung würde mitgezählt) falsch ist.
+ */
+export function bedAreaCm2(bed) {
+  const w = bed.width || 0;
+  const h = bed.height || 0;
+
+  if (bed.type === 'circle') {
+    return Math.PI * (w / 2) * (h / 2);
+  }
+  if (bed.type === 'lshaped') {
+    // L-Form spart das obere rechte Viertel aus (siehe CanvasRenderer._buildBedPath)
+    return w * h * 0.75;
+  }
+  if (bed.type === 'polygon' && bed.points?.length >= 3) {
+    // Shoelace-Formel — Translation um bed.x/y ändert die Fläche nicht
+    let sum = 0;
+    const pts = bed.points;
+    for (let i = 0; i < pts.length; i++) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % pts.length];
+      sum += p1.x * p2.y - p2.x * p1.y;
+    }
+    return Math.abs(sum) / 2;
+  }
+  if (bed.type === 'line') {
+    return 0; // Zäune/Linien/offene Pfade haben keine Fläche
+  }
+  return w * h;
+}
+
+/** Gleiche Berechnung wie bedAreaCm2, aber in m² (Canvas-Einheiten sind cm). */
+export function bedAreaM2(bed) {
+  return bedAreaCm2(bed) / 10000;
+}
+
+/**
  * Compress image data URL to reduce storage size
  */
 export function compressImage(dataUrl, maxWidth = 800) {

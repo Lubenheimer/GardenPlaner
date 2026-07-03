@@ -2,7 +2,7 @@
  * Dashboard — Overview of the garden
  */
 import { store } from '../core/Store.js';
-import { statusLabels, statusEmojis, formatDate } from '../utils/helpers.js';
+import { statusLabels, statusEmojis, formatDate, bedAreaM2 } from '../utils/helpers.js';
 import { getSowingPlants, getHarvestPlants, monthNames } from '../data/plants.js';
 import { renderCropRotationWidget } from './CropRotation.js';
 
@@ -130,24 +130,23 @@ export function renderDashboard() {
     return a.name.localeCompare(b.name);
   });
 
-  const totalArea = beds.reduce((sum, b) => sum + (b.width * b.height / 10000), 0);
+  const totalArea = beds.reduce((sum, b) => sum + bedAreaM2(b), 0);
   
-  // Collect all plantings
-  const allPlantings = [];
-  beds.forEach(b => {
-    if (b.plantings) {
-      b.plantings.forEach(p => {
-        allPlantings.push({ ...p, bedName: b.name });
-      });
-    }
-  });
+  // Collect all plantings with resolved bed name (Pflanzungen liegen in
+  // garden.plantings mit bedId-Referenz, nicht in bed.plantings)
+  const bedNameById = {};
+  beds.forEach(b => { bedNameById[b.id] = b.name; });
+  const allPlantings = plantings.map(p => ({
+    ...p,
+    bedName: bedNameById[p.bedId] || 'Unbekanntes Beet',
+  }));
 
-  // Sort by date (closest first)
-  const today = new Date();
-  allPlantings.sort((a,b) => {
-    const da = new Date(today.getFullYear(), a.month - 1, 15);
-    const db = new Date(today.getFullYear(), b.month - 1, 15);
-    return da - db;
+  // Sort by geplantem Pflanzdatum (nächstes zuerst, Pflanzungen ohne Datum ans Ende)
+  allPlantings.sort((a, b) => {
+    if (!a.datePlanted && !b.datePlanted) return 0;
+    if (!a.datePlanted) return 1;
+    if (!b.datePlanted) return -1;
+    return new Date(a.datePlanted) - new Date(b.datePlanted);
   });
 
   const sowingNow = getSowingPlants(currentMonth);

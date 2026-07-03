@@ -216,6 +216,7 @@ export class CanvasInteraction {
         this.isDraggingPlant   = true;
         this.draggingPlantId   = marker.id;
         this.renderer.draggingPlantId = marker.id;
+        this.renderer.draggingPlantPos = null; // erst ab erster mousemove gesetzt
         this.canvas.style.cursor = 'grabbing';
         return;
       }
@@ -315,12 +316,17 @@ export class CanvasInteraction {
     this.lastHoverPoint = world;
 
     // ── Drag plant marker in placing mode ─────────────────────────
+    // Position während des Ziehens NUR lokal am Renderer halten (nicht pro
+    // mousemove in den Store schreiben) — store.updatePlanting() würde sonst
+    // über 'plantings:changed' das komplette Seitenpanel re-rendern und alle
+    // Events neu binden, bei jeder einzelnen Mausbewegung. Committed wird erst
+    // einmalig bei mouseup (siehe _onMouseUp).
     if (this.isPlacingPlants && this.isDraggingPlant && this.draggingPlantId) {
       const bed = store.getBed(this.placingBedId);
       if (bed) {
         const px = Math.max(0.02, Math.min(0.98, (world.x - bed.x) / bed.width));
         const py = Math.max(0.02, Math.min(0.98, (world.y - bed.y) / bed.height));
-        store.updatePlanting(this.draggingPlantId, { position: { px, py } });
+        this.renderer.draggingPlantPos = { px, py };
         this.renderer.render();
       }
       return;
@@ -376,10 +382,18 @@ export class CanvasInteraction {
     }
 
     if (this.isResizing && this.resizeHandle && this.resizeStartBed) {
-      const dx = world.x - this.dragStart.x;
-      const dy = world.y - this.dragStart.y;
       const bed = this.resizeStartBed;
-      
+
+      // Maus-Delta aus Welt- ins unrotierte lokale Koordinatensystem des Beets
+      // transformieren (Rotation eines Differenzvektors ist pivotunabhängig,
+      // daher genügt die reine Winkel-Rotation ohne Zentrum). Ohne das ziehen
+      // die Griffe bei gedrehten Beeten in die falsche Richtung.
+      const rawDx = world.x - this.dragStart.x;
+      const rawDy = world.y - this.dragStart.y;
+      const rad = -(bed.rotation || 0) * Math.PI / 180;
+      const dx = rawDx * Math.cos(rad) - rawDy * Math.sin(rad);
+      const dy = rawDx * Math.sin(rad) + rawDy * Math.cos(rad);
+
       if (this.resizeHandle.pos === 'rot') {
         const cx = bed.x + bed.width / 2;
         const cy = bed.y + bed.height / 2;
@@ -444,9 +458,15 @@ export class CanvasInteraction {
 
     // ── End plant drag in placing mode ────────────────────────────
     if (this.isDraggingPlant) {
+      // Erst jetzt (einmalig) die während des Ziehens nur lokal gehaltene
+      // Position committen — siehe _onMouseMove.
+      if (this.draggingPlantId && this.renderer.draggingPlantPos) {
+        store.updatePlanting(this.draggingPlantId, { position: this.renderer.draggingPlantPos });
+      }
       this.isDraggingPlant = false;
       this.draggingPlantId = null;
       this.renderer.draggingPlantId = null;
+      this.renderer.draggingPlantPos = null;
       this.canvas.style.cursor = 'crosshair';
       this.renderer.render();
       store.unlockHistory();
@@ -694,6 +714,9 @@ export class CanvasInteraction {
             x: bed.x + offset,
             y: bed.y + offset,
             name: bed.name + ' (Kopie)',
+            // Tiefenkopie statt Referenz — sonst teilen sich Original und
+            // Duplikat dasselbe points-Array (Polygon/Zaun-Punkte).
+            points: bed.points ? structuredClone(bed.points) : bed.points,
           });
           this.renderer.selectedBedId = newBed.id;
           this.renderer.render();
@@ -733,6 +756,7 @@ export class CanvasInteraction {
     if (!this.enabled) return;
     if (e.touches.length === 1) {
       const touch = e.touches[0];
+      this._lastTouchPoint = { clientX: touch.clientX, clientY: touch.clientY };
       this._onMouseDown({ clientX: touch.clientX, clientY: touch.clientY, button: 0, preventDefault: () => {} });
     }
   }
@@ -742,13 +766,18 @@ export class CanvasInteraction {
     e.preventDefault();
     if (e.touches.length === 1) {
       const touch = e.touches[0];
+      this._lastTouchPoint = { clientX: touch.clientX, clientY: touch.clientY };
       this._onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
     }
   }
 
   _onTouchEnd(e) {
     if (!this.enabled) return;
-    this._onMouseUp({ clientX: 0, clientY: 0, button: 0, preventDefault: () => {} });
+    // Letzten bekannten Touchpunkt verwenden statt (0,0) — touchend liefert
+    // keine changedTouches-Koordinaten, die _onMouseUp verarbeiten könnte,
+    // sonst würde z.B. die zweite Ecke eines gezeichneten Beets auf (0,0) fallen.
+    const point = this._lastTouchPoint || { clientX: 0, clientY: 0 };
+    this._onMouseUp({ clientX: point.clientX, clientY: point.clientY, button: 0, preventDefault: () => {} });
   }
 
   drawPreview(ctx) {

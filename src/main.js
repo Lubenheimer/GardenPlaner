@@ -429,6 +429,15 @@ function initEvents() {
     _updateServerStatus(online);
   });
 
+  // localStorage-Quota überschritten (z.B. zu viele Foto-Uploads) — bisher
+  // scheiterte das Speichern still im Hintergrund (nur console.warn).
+  bus.on('storage:quota-exceeded', () => {
+    _showQuotaWarningBanner();
+  });
+  bus.on('storage:quota-ok', () => {
+    _hideQuotaWarningBanner();
+  });
+
   // Store wurde vom Server neu geladen (authoritative Daten)
   bus.on('store:reloaded', () => {
     renderer.selectedBedId = null;
@@ -622,6 +631,66 @@ function _showPlacingBanner() {
 
 function _hidePlacingBanner() {
   document.getElementById('placing-mode-banner')?.remove();
+}
+
+// ========== Speicher-Quota-Warnbanner ==========
+function _showQuotaWarningBanner() {
+  if (document.getElementById('quota-warning-banner')) return; // schon sichtbar
+  const banner = document.createElement('div');
+  banner.id = 'quota-warning-banner';
+  banner.style.cssText = `
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(220, 38, 38, 0.95);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 90vw;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    font-family: Inter, sans-serif;
+  `;
+  banner.innerHTML = `
+    ⚠️ Lokaler Speicher voll — Änderungen werden NICHT mehr im Browser gesichert!
+    <button id="quota-export-btn" style="
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.5);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    ">💾 Notfall-Backup exportieren</button>
+  `;
+  document.body.appendChild(banner);
+
+  document.getElementById('quota-export-btn').addEventListener('click', () => {
+    // Direkt aus dem In-Memory-State exportieren, NICHT aus localStorage —
+    // das kann bei überschrittener Quota veraltet sein (der letzte Write schlug
+    // ja gerade fehl).
+    const blob = new Blob([JSON.stringify(store.state)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GartenPlaner_Notfall-Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+function _hideQuotaWarningBanner() {
+  document.getElementById('quota-warning-banner')?.remove();
 }
 
 // ========== Start ==========

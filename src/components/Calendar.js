@@ -33,7 +33,14 @@ function buildActualRange(datePlanted, dateHarvestExpected) {
   const endM   = dateHarvestExpected ? new Date(dateHarvestExpected).getMonth() + 1 : null;
   const monthSet = new Set();
   if (startM && endM) {
-    for (let m = startM; m <= endM; m++) monthSet.add(m);
+    if (endM >= startM) {
+      for (let m = startM; m <= endM; m++) monthSet.add(m);
+    } else {
+      // Überwinternde Kultur: Bereich läuft über den Jahreswechsel
+      // (z.B. Pflanzung Oktober → erwartete Ernte März)
+      for (let m = startM; m <= 12; m++) monthSet.add(m);
+      for (let m = 1; m <= endM; m++) monthSet.add(m);
+    }
   } else if (startM) {
     monthSet.add(startM);
   } else if (endM) {
@@ -142,9 +149,10 @@ function renderGantt() {
         buildActualRange(plant.datePlanted, plant.dateHarvestExpected);
       const hasActual = actualSet.size > 0;
 
-      // Belegte Monate für Lücken-Analyse sammeln
-      if (hasActual && actualStartM && actualEndM) {
-        for (let m = actualStartM; m <= actualEndM; m++) busyMonths.add(m);
+      // Belegte Monate für Lücken-Analyse sammeln — actualSet direkt nutzen
+      // (berücksichtigt bereits den Jahreswechsel bei überwinternden Kulturen)
+      if (hasActual) {
+        actualSet.forEach(m => busyMonths.add(m));
       } else {
         [...sowSet, ...growSet, ...harvestSet].forEach(m => busyMonths.add(m));
       }

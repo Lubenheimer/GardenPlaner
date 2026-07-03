@@ -1,5 +1,6 @@
 import { store } from '../core/Store.js';
 import { monthNames } from '../data/plants.js';
+import { bedAreaM2 } from '../utils/helpers.js';
 
 export function renderStatistics() {
   const container = document.getElementById('statistics-content');
@@ -359,8 +360,10 @@ function printGardenPlan() {
     const bPlantings = plantingsByBed[bed.id] || [];
     if (bPlantings.length === 0) return '';
     const area = bed.type === 'circle'
-      ? `∅ ca. ${(2 * Math.PI * Math.pow(bed.width / 2 / 100, 2)).toFixed(1)} m²`
-      : `${(bed.width/100).toFixed(1)} m × ${(bed.height/100).toFixed(1)} m`;
+      ? `∅ ca. ${bedAreaM2(bed).toFixed(1)} m²`
+      : bed.type === 'lshaped'
+        ? `${(bed.width/100).toFixed(1)} m × ${(bed.height/100).toFixed(1)} m (${bedAreaM2(bed).toFixed(1)} m² L-Form)`
+        : `${(bed.width/100).toFixed(1)} m × ${(bed.height/100).toFixed(1)} m`;
     return `
       <h3>📦 ${bed.name} <small style="font-weight:400;color:#888">(${area})</small></h3>
       <table>

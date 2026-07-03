@@ -101,12 +101,14 @@ Nach einigen Minuten Interaktion laufen Dutzende parallele Render-Schleifen → 
 ## 🟠 Mittel — Funktionsfehler
 
 ### #6 — Resize rotierter Beete verzerrt
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/core/CanvasInteraction.js:378-417`
 
 Die Hit-Erkennung der Griffe (`getHandleAtPosition`) transformiert den Mauspunkt korrekt ins unrotierte Koordinatensystem. Die Resize-Logik selbst rechnet aber mit den **rohen Welt-Deltas** `dx/dy` — bei einem um z. B. 45° gedrehten Beet ziehen die Griffe in die falsche Richtung und Position/Größe springen.
 
 **Fix-Idee:** `dx/dy` vor der Anwendung um `-bed.rotation` um das Beet-Zentrum rotieren.
+
+> **Umsetzung:** Maus-Delta wird jetzt vor der Anwendung um `-bed.rotation` rotiert (Rotation eines Differenzvektors ist pivotunabhängig, daher genügt die reine Winkel-Rotation ohne Zentrumsberechnung). Verifiziert: bei 90°-Rotation transformiert sich ein Welt-Delta (10, 0) korrekt zu einem lokalen Delta (0, -10) statt unverändert übernommen zu werden.
 
 ---
 
@@ -125,7 +127,7 @@ Bei Klick auf einen Autocomplete-Eintrag wird `selectedPlant` nur aus `dataset.n
 ---
 
 ### #8 — Dashboard-Sektion „Vorbereitungen (Diesen Monat)" rendert nie
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/components/Dashboard.js:136-151` und `:375-390`
 
 ```js
@@ -136,10 +138,12 @@ Beete haben **kein** `plantings`-Feld — Pflanzungen liegen in `garden.planting
 
 **Fix-Idee:** `store.getPlantings()` verwenden und über `bedId` auf den Beetnamen mappen — oder Sektion entfernen (Einkaufsliste deckt den Use-Case inzwischen ab).
 
+> **Umsetzung:** `allPlantings` wird jetzt aus `plantings` (= `store.getPlantings()`) gebaut, mit `bedId → bedName`-Lookup statt des nicht existierenden `bed.plantings`. Sortierung nutzt jetzt `datePlanted` statt des nicht existierenden `month`-Feldes (Pflanzungen ohne Datum landen ans Ende). Verifiziert über echten `renderDashboard()`-Aufruf: Sektion erscheint mit korrektem Beet- und Pflanzennamen.
+
 ---
 
 ### #9 — Flächenberechnungen falsch (Kreis doppelt, L-Form +25 %)
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Dateien:** `src/components/Statistics.js:361-363` (Druck), `src/components/Dashboard.js:133`
 
 1. **Druck/PDF:** Kreisfläche wird als `2 * π * r²` berechnet — **doppelt** so groß wie korrekt (`π * r²`).
@@ -147,10 +151,12 @@ Beete haben **kein** `plantings`-Feld — Pflanzungen liegen in `garden.planting
 
 **Fix-Idee:** Formabhängige Flächenformel zentral in einem Helper (`bedArea(bed)`).
 
+> **Umsetzung:** Neuer zentraler Helper `bedAreaCm2(bed)`/`bedAreaM2(bed)` in `utils/helpers.js` — korrekte Formeln für circle (`π·rx·ry`), lshaped (`0.75·w·h`, passend zum Cutout in `CanvasRenderer._buildBedPath`), polygon (Shoelace-Formel) und line (0, keine Fläche). In Dashboard.js und Statistics.js (Druck) eingesetzt. Verifiziert: Kreis Ø100cm → 0.7854 m² (statt vorher 1.57 m² im Druck), L-Form 200×150cm → 2.25 m² (statt 3.0 m²).
+
 ---
 
 ### #10 — Zäune/Linien: Klick-Hit-Test umfasst die gesamte Bounding Box
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/core/CanvasRenderer.js:742` (`_isPointInBed`)
 
 Der Segment-Distanz-Check gilt nur für `bed.type === 'polygon'`. Mit dem Linien-Werkzeug erstellte Elemente haben aber `type === 'line'` (CanvasInteraction.js:472) und fallen auf den Bounding-Box-Test zurück.
@@ -159,10 +165,12 @@ Der Segment-Distanz-Check gilt nur für `bed.type === 'polygon'`. Mit dem Linien
 
 **Fix-Idee:** Bedingung auf `bed.type === 'polygon' || bed.type === 'line'` erweitern.
 
+> **Umsetzung:** Bedingung erweitert auf `(bed.type === 'polygon' || bed.type === 'line')`; Linien haben stets `isClosed: false`, laufen also automatisch in den Segment-Distanz-Zweig statt in Ray-Casting. Verifiziert: Klick weit von der Diagonalen entfernt (aber innerhalb der alten Bounding-Box) trifft nicht mehr, Klick direkt auf der Linie trifft weiterhin.
+
 ---
 
 ### #11 — Performance: Jede Mausbewegung serialisiert den kompletten State (inkl. Fotos)
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Dateien:** `src/core/Store.js:196-205` (`save`), `src/core/CanvasInteraction.js:367-376`, `src/components/BedEditor.js:244`
 
 1. **Drag/Resize:** Pro `mousemove` läuft `updateBed → save()` → synchrones `JSON.stringify` des **gesamten States inklusive aller Base64-Fotos** nach localStorage. Mit vielen Fotos ruckelt jedes Verschieben massiv.
@@ -170,55 +178,69 @@ Der Segment-Distanz-Check gilt nur für `bed.type === 'polygon'`. Mit dem Linien
 
 **Fix-Idee:** localStorage-Write ebenfalls debouncen; History-Push für Text-Inputs erst auf `change`/`blur`.
 
+> **Umsetzung:** (1) `save()` debounced den localStorage-Write jetzt mit 150ms (analog zum bestehenden 600ms-Server-Debounce), inkl. `beforeunload`-Flush damit beim Tab-Schließen nichts verloren geht. (2) `_pushHistory()` überspringt Pushes, die weniger als 500ms nach dem letzten liegen — schnelle Tastenfolgen landen als EIN Undo-Schritt (Kompromiss: zwei verschiedene Bearbeitungen innerhalb 500ms werden ebenfalls zusammengefasst, akzeptabler Trade-off). Verifiziert: 20 schnelle `updateBed`-Aufrufe → 0 sofortige localStorage-Writes, nur 1 nach Debounce-Ablauf; 11 simulierte Tastendrücke im Namensfeld → nur 1 History-Eintrag statt 11.
+
 ---
 
 ### #12 — Pflanzen-Marker-Drag re-rendert das komplette Seitenpanel pro Mausbewegung
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Dateien:** `src/core/CanvasInteraction.js:318-327`, `src/main.js:409-416`
 
 Beim Ziehen eines Pflanzen-Markers feuert jede Mausbewegung `updatePlanting` → `plantings:changed` → main.js re-emittiert `bed:selected` → `openRightPanel` ersetzt das komplette Panel-innerHTML und bindet alle Events neu. Pro `mousemove`. Sichtbares Ruckeln + Fokusverlust in Panel-Inputs.
 
 **Fix-Idee:** Während `isDraggingPlant` die Position nur lokal halten und erst bei `mouseup` in den Store schreiben.
 
+> **Umsetzung:** Position wird während des Ziehens nur in `renderer.draggingPlantPos` gehalten (neues Feld); `CanvasRenderer._drawPlantPositions` nutzt diese lokale Position fürs Rendering des gezogenen Markers. Erst bei `mouseup` wird einmalig `store.updatePlanting()` aufgerufen. Verifiziert mit isoliertem Renderer/Interaction-Paar: 15 simulierte Mausbewegungen → 0 `updatePlanting`-Aufrufe während des Ziehens, genau 1 Aufruf bei `mouseup` mit exakt korrekter Endposition.
+
 ---
 
 ### #13 — Erweiterter Jahresplan: Überwinternde Kulturen ohne Actual-Balken
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/components/Calendar.js:31-44` (`buildActualRange`)
 
 Bei Pflanzung im Oktober und erwarteter Ernte im März (`startM=10`, `endM=3`) läuft die Schleife `for (let m = startM; m <= endM; m++)` nicht — `monthSet` bleibt leer, kein Balken wird gezeichnet. Das Jahr der Daten wird generell ignoriert. Gleiches Problem in der Lücken-Analyse (`busyMonths`).
 
 **Fix-Idee:** Bei `endM < startM` über die Jahresgrenze wickeln (`10,11,12,1,2,3`).
 
+> **Umsetzung:** `buildActualRange` wickelt jetzt bei `endM < startM` über den Jahreswechsel (`startM..12` + `1..endM`). Die Lücken-Analyse (`busyMonths`) nutzt jetzt direkt das korrekte `actualSet` statt eine eigene (fehlerhafte) Range-Schleife zu wiederholen. Verifiziert über echten `renderCalendar()`-Aufruf: Pflanzung Okt. 2026 → Ernte März 2027 erzeugt genau 6 `actual-bar`-Zellen (Okt–März) statt vorher 0.
+
 ---
 
 ### #14 — Touch: Zeichnen endet immer bei Bildschirmposition (0,0)
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/core/CanvasInteraction.js:749-752` (`_onTouchEnd`)
 
 `_onMouseUp({ clientX: 0, clientY: 0, … })` — der Rect/Kreis/L-Form-Abschluss berechnet die zweite Ecke aus der Position (0,0) statt aus dem letzten Touchpunkt. Auf Touch-Geräten entstehen Beete mit falscher Geometrie. (Mobile-Optimierung ist Backlog 7.6, aber das hier ist ein echter Fehler, kein fehlendes Feature.)
 
 **Fix-Idee:** Letzten bekannten Touchpunkt aus `touchmove` zwischenspeichern und in `_onTouchEnd` verwenden.
 
+> **Umsetzung:** `_onTouchStart`/`_onTouchMove` speichern jetzt `this._lastTouchPoint`; `_onTouchEnd` verwendet diesen statt hartcodierter `(0,0)`-Koordinaten. Code-Review-verifiziert (keine Touch-Emulation im Test-Setup verfügbar); Fix ist eine reine 1:1-Ersetzung der Konstante durch den zwischengespeicherten Wert.
+
 ---
 
 ### #15 — Kontextmenü „Duplizieren" teilt das points-Array per Referenz
-**Status:** 🔲 Offen
+**Status:** ✅ Behoben (12.06.2026)
 **Datei:** `src/core/CanvasInteraction.js:689-697`
 
 `store.addBed({ ...bed, … })` kopiert flach; `addBed` übernimmt `points: bed.points || []` — Original-Polygon und Duplikat zeigen auf **dasselbe Array**. Jede zukünftige Punkt-Mutation träfe beide Beete. (Ctrl+C/V in main.js macht es korrekt mit `JSON.parse(JSON.stringify(...))`.)
 
 **Fix-Idee:** `points: structuredClone(bed.points)` beim Duplizieren.
 
+> **Umsetzung:** Exakt wie vorgeschlagen — `points: bed.points ? structuredClone(bed.points) : bed.points`. Verifiziert: nach Duplizieren `bed.points === newBed.points` ist `false`; Mutation am Original-Array beeinflusst die Kopie nicht mehr.
+
 ---
 
 ### #16 — localStorage-Quota: Fotos als Base64 im State → stilles Speicherversagen
-**Status:** 🔲 Offen
+**Status:** 🔧 Teilweise behoben (12.06.2026)
 **Dateien:** `src/core/Store.js:196-202`, `src/components/Photos.js`, `src/utils/helpers.js:92`
 
 Fotos werden komprimiert (~100–200 KB Base64) direkt im State gespeichert. Bei ~5 MB localStorage-Quota schlägt ab ca. 30–40 Fotos **jede** lokale Speicherung fehl — nur mit `console.warn`, ohne UI-Hinweis. Der grüne Server-Status-Dot suggeriert weiterhin Sicherheit; im Offline-Modus (localStorage-only) ist es realer Datenverlust beim nächsten Reload.
 
 **Fix-Idee:** Fotos getrennt vom Kern-State speichern (IndexedDB oder nur serverseitig); Quota-Fehler im UI anzeigen.
+
+> **Umsetzung (Teil 1 von 2):** Quota-Fehler ist jetzt sichtbar statt still — `_writeLocalStorage()` emittiert bei Fehlschlag `storage:quota-exceeded`; main.js zeigt einen persistenten roten Banner mit „💾 Notfall-Backup exportieren"-Button, der direkt aus dem In-Memory-`store.state` exportiert (nicht aus dem — dann veralteten — localStorage). Banner verschwindet automatisch, sobald ein Write wieder gelingt (`storage:quota-ok`, z.B. nach Foto-Löschung). Verifiziert: simulierter `QuotaExceededError` → Banner erscheint; simulierte Recovery → Banner verschwindet; Export-Button wirft keinen Fehler.
+>
+> **Noch offen (Teil 2):** Die eigentliche Architektur-Änderung — Fotos getrennt vom Kern-State speichern (IndexedDB oder nur serverseitig) — ist NICHT umgesetzt. Das verhindert den Quota-Fehler nicht, macht ihn nur sichtbar und gibt dem Nutzer eine Notfall-Exit-Option. Größerer Umbau, empfohlen für eine eigene Welle.
 
 ---
 
