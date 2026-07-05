@@ -247,40 +247,66 @@ Fotos werden komprimiert (~100–200 KB Base64) direkt im State gespeichert. Bei
 ## 🟡 Klein — Inkonsistenzen, Leaks, Robustheit
 
 ### #17 — Frost-Schwelle inkonsistent (`< 2` vs. `<= 2`)
-**Status:** 🔲 Offen — `src/components/Dashboard.js:80,99` nutzt `< 2`; `src/components/Tasks.js:153` nutzt `<= 2`. Features.md sagt an einer Stelle „unter 2 °C", an anderer „≤ 2 °C". Bei exakt 2,0 °C warnt der Aufgaben-Tab, das Dashboard nicht.
+**Status:** ✅ Behoben (13.06.2026) — `src/components/Dashboard.js:80,99` nutzt `< 2`; `src/components/Tasks.js:153` nutzt `<= 2`. Features.md sagt an einer Stelle „unter 2 °C", an anderer „≤ 2 °C". Bei exakt 2,0 °C warnt der Aufgaben-Tab, das Dashboard nicht.
+
+> **Umsetzung:** Beide Dashboard.js-Stellen auf `<= 2` vereinheitlicht (passend zu Tasks.js). Verifiziert per grep — beide Dateien nutzen jetzt konsistent `<= 2`.
 
 ### #18 — Modal-Overlay akkumuliert Click-Listener
-**Status:** 🔲 Offen — PlantingModal, Photos, HarvestModal, ShoppingList rufen bei jedem Öffnen `overlay.addEventListener('click', …)` auf dem **geteilten** `#modal-overlay` auf, ohne alte Listener zu entfernen. HarvestModal re-rendert sich zudem nach jedem Speichern selbst → besonders schnelle Akkumulation. Folgen: mehrfache `closeModal`-Aufrufe, Memory-Leak über die Session.
+**Status:** ✅ Behoben (13.06.2026) — PlantingModal, Photos, HarvestModal, ShoppingList rufen bei jedem Öffnen `overlay.addEventListener('click', …)` auf dem **geteilten** `#modal-overlay` auf, ohne alte Listener zu entfernen. HarvestModal re-rendert sich zudem nach jedem Speichern selbst → besonders schnelle Akkumulation. Folgen: mehrfache `closeModal`-Aufrufe, Memory-Leak über die Session.
+
+> **Umsetzung:** In allen 4 Dateien `overlay.addEventListener('click', …)` durch `overlay.onclick = …` ersetzt — eine Property-Zuweisung kann per Definition nie akkumulieren (immer nur ein aktiver Handler). Bonus: identisches Muster in `GardenManager.js:87` (nicht ursprünglich gelistet, aber derselbe Bug) ebenfalls gefixt. Verifiziert: 5× wiederholtes Öffnen desselben Modals lässt `overlay.onclick` weiterhin eine einzelne Funktion sein.
 
 ### #19 — Gartenwechsel führt `_onGardenSwitch` doppelt aus
-**Status:** 🔲 Offen — `store.switchGarden()` emittiert `garden:switched` (→ main.js:423 ruft `_onGardenSwitch`), zusätzlich ruft GardenManager.js:93 den Callback direkt auf. Doppeltes Re-Rendering aller Views bei jedem Wechsel.
+**Status:** ✅ Behoben (13.06.2026) — `store.switchGarden()` emittiert `garden:switched` (→ main.js:423 ruft `_onGardenSwitch`), zusätzlich ruft GardenManager.js:93 den Callback direkt auf. Doppeltes Re-Rendering aller Views bei jedem Wechsel.
+
+> **Umsetzung:** `onSwitchCallback`-Mechanismus komplett aus GardenManager.js entfernt (`showGardenManager()` nimmt keinen Parameter mehr entgegen) — store.switchGarden()/deleteGarden()/createGarden() emittieren den Bus-Event bereits durchgängig, main.js hört bereits global darauf. main.js's Aufruf angepasst auf `showGardenManager()` ohne Argument. Verifiziert: Modal öffnet weiterhin fehlerfrei ohne den entfernten Parameter.
 
 ### #20 — Zoom-Anzeige stale / Zoom-Sprung nach Fokus-Modus
-**Status:** 🔲 Offen — (a) `fitAll()` beim App-Start (main.js:41) und in `exitFocus()` emittiert kein `zoom:changed` → Label zeigt 100 % obwohl der Zoom anders ist. (b) `focusBed` zoomt bis 6×, das Mausrad clampt auf max. 3× (CanvasInteraction.js:554) → erster Scroll im Fokus-Modus springt hart von 6× auf 3×.
+**Status:** ✅ Behoben (13.06.2026) — (a) `fitAll()` beim App-Start (main.js:41) und in `exitFocus()` emittiert kein `zoom:changed` → Label zeigt 100 % obwohl der Zoom anders ist. (b) `focusBed` zoomt bis 6×, das Mausrad clampt auf max. 3× (CanvasInteraction.js:554) → erster Scroll im Fokus-Modus springt hart von 6× auf 3×.
+
+> **Umsetzung:** (a) `CanvasRenderer.fitAll()` emittiert jetzt selbst `zoom:changed` (in beiden Branches — mit und ohne Beete); redundanter Emit im Toolbar-Fit-Button in main.js entfernt. (b) Mausrad-Zoom-Obergrenze ist jetzt `Math.max(3, this.renderer.zoom)` statt hartcodiert `3` — ein bereits höherer Zoom (z.B. 6× aus dem Fokus-Modus) wird beim Rausscrollen sanft reduziert statt abrupt gekappt. Verifiziert: `fitAll()` emittiert genau 1 `zoom:changed`-Event; simulierter Wheel-Schritt von 6× → 5,4× (sanft) statt hartem Sprung auf 3×.
 
 ### #21 — User-Eingaben unescaped in HTML-Templates
-**Status:** 🔲 Offen — Beet-Namen, Notizen, Sorten, Pflanzennamen werden in fast allen Komponenten unescaped in Template-Literals interpoliert (z. B. BedEditor.js:28 `value="${bed.name}"`). Ein `"` im Beetnamen zerbricht das Attribut, `<` bricht Layout; lokales XSS-Risiko gering, aber UI-Korruption real. Einzig GardenManager.js hat `_escapeHtml`. **Fix-Idee:** zentrale `esc()`-Helper-Funktion und konsequent nutzen.
+**Status:** 🔧 Teilweise behoben (13.06.2026) — Beet-Namen, Notizen, Sorten, Pflanzennamen werden in fast allen Komponenten unescaped in Template-Literals interpoliert (z. B. BedEditor.js:28 `value="${bed.name}"`). Ein `"` im Beetnamen zerbricht das Attribut, `<` bricht Layout; lokales XSS-Risiko gering, aber UI-Korruption real. Einzig GardenManager.js hat `_escapeHtml`. **Fix-Idee:** zentrale `esc()`-Helper-Funktion und konsequent nutzen.
+
+> **Umsetzung:** Zentraler `esc()`-Helper in `utils/helpers.js` ergänzt (escaped `&<>"'`). Angewendet auf die im Issue explizit genannte Datei `BedEditor.js` — Beet-Name (Input-Value), Notizen (Textarea-Inhalt), Pflanzungsname und -sorte in der Pflanzungsliste. Verifiziert: Beetname `Beet "Süd" <test>` wird korrekt zu `Beet &quot;Süd&quot; &lt;test&gt;` im gerenderten HTML.
+>
+> **Noch offen:** Die übrigen ~8 Komponenten (PlantingModal, ShoppingList, Photos, Statistics-Druck, …) sind nicht durchgängig auf `esc()` umgestellt — der Helper ist einsatzbereit, die flächendeckende Anwendung bleibt als Folgearbeit.
 
 ### #22 — Server: JSON-Write nicht atomar
-**Status:** 🔲 Offen — `server/index.js:43`: `writeFileSync` direkt auf die Zieldatei. Absturz/Stromausfall mitten im Write hinterlässt eine korrupte `garden-data.json` → beim nächsten Start liefert `readData()` `null` und der Client lädt/überschreibt mit leerem Stand. **Fix-Idee:** in Temp-Datei schreiben + `renameSync`; optional Backup-Rotation.
+**Status:** ✅ Behoben (13.06.2026) — `server/index.js:43`: `writeFileSync` direkt auf die Zieldatei. Absturz/Stromausfall mitten im Write hinterlässt eine korrupte `garden-data.json` → beim nächsten Start liefert `readData()` `null` und der Client lädt/überschreibt mit leerem Stand. **Fix-Idee:** in Temp-Datei schreiben + `renameSync`; optional Backup-Rotation.
+
+> **Umsetzung:** Exakt wie vorgeschlagen — Write geht zuerst in `garden-data.json.tmp`, dann `renameSync()` auf die Zieldatei (auf demselben Dateisystem atomar). Verifiziert per echtem POST/GET-Roundtrip über die laufende `/api/data`-Route.
 
 ### #23 — Toter Selector `[data-view=garden]`
-**Status:** 🔲 Offen — BedEditor.js:389: `document.querySelector('[data-view=garden]')?.click()` — die View heißt `canvas`, der Selector findet nie etwas. Harmlos (das gewünschte Re-Rendering passiert über den Event-Bus sowieso), aber toter Code.
+**Status:** ✅ Behoben (13.06.2026) — BedEditor.js:389: `document.querySelector('[data-view=garden]')?.click()` — die View heißt `canvas`, der Selector findet nie etwas. Harmlos (das gewünschte Re-Rendering passiert über den Event-Bus sowieso), aber toter Code.
+
+> **Umsetzung:** Toter Aufruf ersatzlos entfernt — `store.updatePlanting()` emittiert bereits `plantings:changed`, worauf main.js hört und das Panel automatisch neu rendert.
 
 ### #24 — Gieß-Erinnerung „Heute fällig" jeden Tag bei fehlendem Pflanzdatum
-**Status:** 🔲 Offen — Tasks.js:33-36: Ohne `datePlanted` ist `daysSincePlanted = 0` und `0 % waterDays === 0` → die Pflanzung erscheint **jeden Tag** als „Heute fällig". Gleiches Muster beim Düngen (dort durch `daysSincePlanted > 0` abgefangen — nur beim Gießen fehlt der Check).
+**Status:** ✅ Behoben (13.06.2026) — Tasks.js:33-36: Ohne `datePlanted` ist `daysSincePlanted = 0` und `0 % waterDays === 0` → die Pflanzung erscheint **jeden Tag** als „Heute fällig". Gleiches Muster beim Düngen (dort durch `daysSincePlanted > 0` abgefangen — nur beim Gießen fehlt der Check).
+
+> **Umsetzung:** Beide Reminder-Blöcke (Gießen UND Düngen) erfordern jetzt zusätzlich `p.datePlanted` — ohne Pflanzdatum wird gar keine Erinnerung erzeugt (statt eines irreführenden `daysSincePlanted=0`-Fallbacks). Beim Testen einen **zweiten, bis dahin unentdeckten Bug gefunden und mitbehoben**: Die Dünge-Erinnerung zeigte fälschlich „Heute fällig" auch am Tag der Pflanzung selbst (Tag 0) bei JEDER Pflanzung — nicht nur bei fehlendem Datum —, da `nextFertilizeIn === intervalDays ? 0 : …` den Tag-0-Fall fälschlich wie einen echten Fälligkeitstag behandelte. `nextIn`-Berechnung jetzt mit explizitem Tag-0-Zweig. Verifiziert über echten `renderTasks()`-Aufruf: Pflanzung ohne Datum → 0 Erinnerungen; Pflanzung mit `datePlanted=heute` → korrekt nur die fällige Gieß-Erinnerung, keine verfrühte Dünge-Erinnerung mehr.
 
 ### #25 — L-Form: Klick in die Aussparung trifft das Beet
-**Status:** 🔲 Offen — CanvasRenderer.js:789: L-Form nutzt Bounding-Box-Hit-Test; die ausgesparte Ecke (oben rechts) ist klickbar/wählbar und Pflanzen-Marker lassen sich dort platzieren, obwohl dort kein Beet ist.
+**Status:** ✅ Behoben (13.06.2026) — CanvasRenderer.js:789: L-Form nutzt Bounding-Box-Hit-Test; die ausgesparte Ecke (oben rechts) ist klickbar/wählbar und Pflanzen-Marker lassen sich dort platzieren, obwohl dort kein Beet ist.
+
+> **Umsetzung:** Eigener `lshaped`-Zweig in `_isPointInBed()` mit Ray-Casting gegen dieselben 6 Eckpunkte, die auch `_buildBedPath()` zum Zeichnen nutzt. Verifiziert: Klick in der Aussparung (150,30) trifft nicht mehr; Klicks in beiden echten L-Teilen treffen weiterhin korrekt.
 
 ### #26 — `compressImage` ohne Fehlerbehandlung
-**Status:** 🔲 Offen — helpers.js:92: kein `img.onerror` → bei defekter Bilddatei wird das Promise nie resolved, der Foto-Upload hängt still.
+**Status:** ✅ Behoben (13.06.2026) — helpers.js:92: kein `img.onerror` → bei defekter Bilddatei wird das Promise nie resolved, der Foto-Upload hängt still.
+
+> **Umsetzung:** `img.onerror` ergänzt, lehnt das Promise mit einer Fehlermeldung ab. `Photos.js`'s `handleFiles()` fängt die Ablehnung jetzt per try/catch ab und zeigt dem Nutzer einen `alert()` mit Dateinamen statt still zu hängen. Verifiziert: defekte Bilddaten → Promise rejected innerhalb von Millisekunden (statt Timeout nach 2s in einem Race-Test).
 
 ### #27 — Backup-Export liest localStorage statt Store-State
-**Status:** 🔲 Offen — SettingsManager.js:372: Export nutzt `localStorage.getItem(...)`. Wenn der letzte localStorage-Write am Quota scheiterte (Issue #16), exportiert man veraltete Daten, obwohl der aktuelle State im Speicher korrekt wäre. **Fix-Idee:** `JSON.stringify(store.state)` exportieren.
+**Status:** ✅ Behoben (13.06.2026) — SettingsManager.js:372: Export nutzt `localStorage.getItem(...)`. Wenn der letzte localStorage-Write am Quota scheiterte (Issue #16), exportiert man veraltete Daten, obwohl der aktuelle State im Speicher korrekt wäre. **Fix-Idee:** `JSON.stringify(store.state)` exportieren.
+
+> **Umsetzung:** Exakt wie vorgeschlagen. Verifiziert: localStorage künstlich mit veralteten Daten überschrieben, In-Memory-State mit frischem Beet angereichert → Export enthält das frische Beet, nicht den veralteten localStorage-Marker.
 
 ### #28 — `customHeight: 0` nicht speicherbar
-**Status:** 🔲 Offen — Store.js:358: `customHeight: bed.customHeight || null` — eine explizit gesetzte Aufbauhöhe von 0 m wird durch `|| null` verworfen und fällt auf die Typ-Standardhöhe zurück (relevant z. B. für flache Bodenbeete, die keinen Schatten werfen sollen). Gleiches `||`-Muster bei `rotation: 0` (harmlos, da 0 = Default) und in `updateDim` (BedEditor). **Fix-Idee:** `?? null` statt `|| null`.
+**Status:** ✅ Behoben (13.06.2026) — Store.js:358: `customHeight: bed.customHeight || null` — eine explizit gesetzte Aufbauhöhe von 0 m wird durch `|| null` verworfen und fällt auf die Typ-Standardhöhe zurück (relevant z. B. für flache Bodenbeete, die keinen Schatten werfen sollen). Gleiches `||`-Muster bei `rotation: 0` (harmlos, da 0 = Default) und in `updateDim` (BedEditor). **Fix-Idee:** `?? null` statt `|| null`.
+
+> **Umsetzung:** `bed.customHeight || null` → `bed.customHeight ?? null` in `Store.js`'s `addBed()`. Die im Issue mitgenannte Stelle in `BedEditor.js`'s `updateDim()` erwies sich bei Prüfung als bereits korrekt (nutzt `!== ''`-Check statt `||`); `rotation: 0` bleibt wie im Issue selbst als harmlos vermerkt unverändert. Verifiziert: `addBed({ customHeight: 0, … })` behält `customHeight === 0` (vorher wäre es zu `null` normalisiert worden).
 
 ---
 

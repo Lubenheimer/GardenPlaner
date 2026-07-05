@@ -369,7 +369,11 @@ export function bindSettingsEvents(containerBlock, onUpdateCallback) {
 
   // Backup Export
   containerBlock.querySelector('#backup-export-btn')?.addEventListener('click', () => {
-    const raw = localStorage.getItem('gartenplaner_data');
+    // Aus dem In-Memory-State exportieren statt localStorage — wenn der letzte
+    // localStorage-Write an der Quota gescheitert ist (siehe Store.js
+    // storage:quota-exceeded), wäre localStorage sonst veraltet gewesen,
+    // obwohl store.state den korrekten aktuellen Stand hat.
+    const raw = JSON.stringify(store.state);
     if (!raw) return alert('Keine Daten zum Exportieren gefunden.');
     const blob = new Blob([raw], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

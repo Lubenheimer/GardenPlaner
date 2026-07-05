@@ -97,9 +97,13 @@ export function showHarvestModal(planting, bedId) {
 
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e) => {
+  // onclick-Zuweisung statt addEventListener: #modal-overlay ist ein geteiltes,
+  // nie ersetztes DOM-Element — addEventListener würde bei jedem Modal-Öffnen
+  // einen weiteren Listener akkumulieren. Besonders relevant hier, da sich
+  // dieses Modal nach jedem Speichern selbst erneut aufruft (showHarvestModal).
+  overlay.onclick = (e) => {
     if (e.target === overlay) closeModal();
-  });
+  };
 
   // Delete existing harvest
   document.querySelectorAll('.harvest-delete-btn').forEach(btn => {

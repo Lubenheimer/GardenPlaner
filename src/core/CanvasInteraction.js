@@ -571,7 +571,12 @@ export class CanvasInteraction {
     const worldBefore = this.renderer.screenToWorld(pos.x, pos.y);
 
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = clamp(this.renderer.zoom * delta, 0.2, 3);
+    // Obergrenze dynamisch: normalerweise 3×, aber falls der Zoom bereits höher
+    // ist (z.B. 6× im Fokus-Modus), diesen Wert als Obergrenze übernehmen —
+    // sonst würde der erste Scroll nach Verlassen des Fokus hart von 6× auf 3×
+    // springen statt schrittweise runterzuzoomen.
+    const maxZoom = Math.max(3, this.renderer.zoom);
+    const newZoom = clamp(this.renderer.zoom * delta, 0.2, maxZoom);
     this.renderer.zoom = newZoom;
 
     // Keep the point under cursor stable

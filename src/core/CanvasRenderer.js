@@ -165,6 +165,7 @@ export class CanvasRenderer {
       this.offsetX = (this.canvasWidth  - garden.width  * this.zoom) / 2;
       this.offsetY = (this.canvasHeight - garden.height * this.zoom) / 2;
       this.render();
+      bus.emit('zoom:changed', this.zoom);
       return;
     }
     const xs = beds.flatMap(b => [b.x, b.x + (b.width  || 100)]);
@@ -184,6 +185,9 @@ export class CanvasRenderer {
     this.offsetX = (w - bW * newZoom) / 2 - minX * newZoom;
     this.offsetY = (h - bH * newZoom) / 2 - minY * newZoom;
     this.render();
+    // Zoom-Label im Toolbar aktuell halten — bisher blieb es nach fitAll()
+    // (Start, exitFocus) auf dem zuletzt manuell gesetzten Wert stehen.
+    bus.emit('zoom:changed', this.zoom);
   }
 
   screenToWorld(sx, sy) {
@@ -790,7 +794,29 @@ export class CanvasRenderer {
       }
     }
     
-    // Simple bounding box for rect and L-shaped
+    if (bed.type === 'lshaped') {
+      // Ray-Casting gegen dieselben 6 Eckpunkte wie in _buildBedPath — sonst
+      // wäre die ausgesparte obere rechte Ecke fälschlich klickbar (Bounding-Box).
+      const w = bed.width, h = bed.height;
+      const poly = [
+        { x: bed.x,           y: bed.y },
+        { x: bed.x + w * 0.5, y: bed.y },
+        { x: bed.x + w * 0.5, y: bed.y + h * 0.5 },
+        { x: bed.x + w,       y: bed.y + h * 0.5 },
+        { x: bed.x + w,       y: bed.y + h },
+        { x: bed.x,           y: bed.y + h },
+      ];
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i].x, yi = poly[i].y;
+        const xj = poly[j].x, yj = poly[j].y;
+        const intersect = ((yi > pY) !== (yj > pY)) && (pX < (xj - xi) * (pY - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    // Simple bounding box for rect
     return pX >= bed.x && pX <= bed.x + bed.width && pY >= bed.y && pY <= bed.y + bed.height;
   }
 

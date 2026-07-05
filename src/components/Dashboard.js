@@ -77,7 +77,7 @@ function renderWeatherWidget(weatherData, city) {
   const today = new Date().toISOString().split('T')[0];
   const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
-  const frostDays = weatherData.filter(d => d.tempMin < 2).map(d => {
+  const frostDays = weatherData.filter(d => d.tempMin <= 2).map(d => {
     const dt = new Date(d.date);
     return dayNames[dt.getDay()];
   });
@@ -96,7 +96,7 @@ function renderWeatherWidget(weatherData, city) {
         ${weatherData.map(d => {
           const dt = new Date(d.date);
           const isToday = d.date === today;
-          const isFrost = d.tempMin < 2;
+          const isFrost = d.tempMin <= 2;
           return `
             <div class="weather-day ${isToday ? 'today' : ''}">
               <div class="weather-day-name">${isToday ? 'Heute' : dayNames[dt.getDay()]}</div>

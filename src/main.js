@@ -82,8 +82,10 @@ function initNavigation() {
   });
 
   // Garden switcher button
+  // showGardenManager() nimmt keinen Callback mehr entgegen — store.switchGarden()
+  // etc. emittieren bereits 'garden:switched', worauf main.js weiter unten hört.
   document.getElementById('garden-switcher-btn')?.addEventListener('click', () => {
-    showGardenManager(_onGardenSwitch);
+    showGardenManager();
   });
 }
 
@@ -193,10 +195,9 @@ function initToolbar() {
     _updateUndoRedoButtons();
   });
 
-  // Fit-All button
+  // Fit-All button — fitAll() emittiert 'zoom:changed' bereits selbst
   document.getElementById('tool-fit')?.addEventListener('click', () => {
     renderer.fitAll();
-    bus.emit('zoom:changed', renderer.zoom);
   });
 
   // Environment Sliders

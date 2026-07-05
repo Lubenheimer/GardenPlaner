@@ -3,6 +3,21 @@
  */
 
 /**
+ * Escaped Nutzer-Text für sichere Interpolation in Template-Literal-HTML.
+ * Ohne dies bricht z.B. ein `"` in einem Beetnamen das umgebende
+ * value="..."-Attribut, oder `<` verunstaltet das Layout.
+ */
+export function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Format a date string for display
  */
 export function formatDate(dateStr) {
@@ -127,7 +142,7 @@ export function bedAreaM2(bed) {
  * Compress image data URL to reduce storage size
  */
 export function compressImage(dataUrl, maxWidth = 800) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -143,6 +158,9 @@ export function compressImage(dataUrl, maxWidth = 800) {
       ctx.drawImage(img, 0, 0, w, h);
       resolve(canvas.toDataURL('image/jpeg', 0.7));
     };
+    // Ohne diesen Handler blieb das Promise bei einer defekten Bilddatei für
+    // immer offen — der Foto-Upload hing still, ohne Fehler oder Timeout.
+    img.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
     img.src = dataUrl;
   });
 }

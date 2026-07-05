@@ -3,7 +3,7 @@
  */
 import { store } from '../core/Store.js';
 import { bus } from '../core/EventBus.js';
-import { bedColors, statusLabels, statusEmojis, formatDate } from '../utils/helpers.js';
+import { bedColors, statusLabels, statusEmojis, formatDate, esc } from '../utils/helpers.js';
 import { showHarvestModal } from './HarvestModal.js';
 
 export function renderBedEditor(bed) {
@@ -25,7 +25,7 @@ export function renderBedEditor(bed) {
       <div class="panel-section">
         <div class="form-group">
           <label class="form-label">Name</label>
-          <input type="text" class="form-input" id="bed-name-input" value="${bed.name}">
+          <input type="text" class="form-input" id="bed-name-input" value="${esc(bed.name)}">
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export function renderBedEditor(bed) {
               ${plantings.map(p => {
                 const harvestCount = store.getHarvests(p.id).length;
                 const meta = [];
-                if (p.variety) meta.push(p.variety);
+                if (p.variety) meta.push(esc(p.variety));
                 if (p.quantity) meta.push(`${p.quantity} Stk`);
                 if (p.spacing) meta.push(`↔${p.spacing}cm`);
                 const hasPosition = !!p.position;
@@ -168,7 +168,7 @@ export function renderBedEditor(bed) {
                     ${hasPosition ? `<span style="position:absolute;top:-4px;right:-4px;font-size:8px;background:var(--color-success,#22c55e);border-radius:50%;width:10px;height:10px;display:flex;align-items:center;justify-content:center;color:white;">📍</span>` : ''}
                   </span>
                   <div class="planting-info">
-                    <div class="planting-name">${p.name}${meta.length > 0 ? ` <span style="font-weight:400;font-size:11px;color:var(--color-text-muted)">${meta.join(' · ')}</span>` : ''}</div>
+                    <div class="planting-name">${esc(p.name)}${meta.length > 0 ? ` <span style="font-weight:400;font-size:11px;color:var(--color-text-muted)">${meta.join(' · ')}</span>` : ''}</div>
                     <div class="planting-date">${formatDate(p.datePlanted)}${p.dateHarvestExpected ? ` → ${formatDate(p.dateHarvestExpected)}` : ''}${harvestCount > 0 ? ` · 🧺 ${harvestCount}×` : ''}</div>
                   </div>
                   <button class="btn btn-sm planting-harvest-btn" data-planting-id="${p.id}" data-bed-id="${bed.id}"
@@ -217,7 +217,7 @@ export function renderBedEditor(bed) {
       <div class="panel-section">
         <div class="form-group">
           <label class="form-label">Notizen</label>
-          <textarea class="form-input" id="bed-notes-input" placeholder="Notizen zum Beet..." rows="3">${bed.notes || ''}</textarea>
+          <textarea class="form-input" id="bed-notes-input" placeholder="Notizen zum Beet..." rows="3">${esc(bed.notes || '')}</textarea>
         </div>
       </div>
 
@@ -384,9 +384,10 @@ export function bindBedEditorEvents(bedId, handlers) {
   document.querySelectorAll('.planting-perennial-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const isPerennial = btn.dataset.perennial === 'true';
+      // store.updatePlanting() emittiert 'plantings:changed'; main.js hört
+      // darauf und re-emittiert bereits 'bed:selected', um dieses Panel neu
+      // zu rendern — der frühere Klick auf einen toten Selector war unnötig.
       store.updatePlanting(btn.dataset.plantingId, { isPerennial: !isPerennial });
-      // We need to re-render the bed editor panel to reflect changes
-      document.querySelector('[data-view=garden]')?.click();
     });
   });
 

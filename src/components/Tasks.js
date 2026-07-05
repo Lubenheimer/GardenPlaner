@@ -29,10 +29,11 @@ function generateCareReminders(precipAnalysis) {
     const bedName = bed ? bed.name : 'Unbekanntes Beet';
 
     // ── Watering reminder ────────────────────────────────────────────
-    if (plant.waterDays) {
-      const daysSincePlanted = p.datePlanted
-        ? Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24))
-        : 0;
+    // Ohne datePlanted lässt sich kein Intervall berechnen — der bisherige
+    // Fallback auf daysSincePlanted=0 ließ die Pflanzung fälschlich JEDEN Tag
+    // als "Heute fällig" erscheinen (0 % waterDays ist immer 0).
+    if (plant.waterDays && p.datePlanted) {
+      const daysSincePlanted = Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24));
       const isWateringDay = daysSincePlanted % plant.waterDays === 0;
       const nextWateringIn = plant.waterDays - (daysSincePlanted % plant.waterDays);
       const nextIn = nextWateringIn === plant.waterDays ? 0 : nextWateringIn;
@@ -69,13 +70,26 @@ function generateCareReminders(precipAnalysis) {
     }
 
     // ── Fertilizing reminder ─────────────────────────────────────────
-    if (plant.fertilizeWeeks) {
-      const daysSincePlanted = p.datePlanted
-        ? Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24))
-        : 0;
+    // Ohne datePlanted lässt sich kein Intervall berechnen (gleiches Problem
+    // wie beim Gießen).
+    if (plant.fertilizeWeeks && p.datePlanted) {
+      const daysSincePlanted = Math.floor((today - new Date(p.datePlanted)) / (1000 * 60 * 60 * 24));
       const intervalDays = plant.fertilizeWeeks * 7;
-      const isFertilizeDay = intervalDays > 0 && daysSincePlanted % intervalDays === 0 && daysSincePlanted > 0;
-      const nextFertilizeIn = intervalDays - (daysSincePlanted % intervalDays);
+      const isFertilizeDay = intervalDays > 0 && daysSincePlanted > 0 && daysSincePlanted % intervalDays === 0;
+
+      // Am Pflanztag selbst (daysSincePlanted === 0) beginnt das erste
+      // Düngeintervall gerade erst — die alte Normalisierung
+      // (nextFertilizeIn === intervalDays ? 0 : ...) behandelte 0 % intervalDays
+      // fälschlich wie einen "fällig heute"-Tag, obwohl isFertilizeDay bereits
+      // korrekt false ist. Explizit unterscheiden statt implizit über 0 % n.
+      let nextIn;
+      if (isFertilizeDay) {
+        nextIn = 0;
+      } else if (daysSincePlanted <= 0) {
+        nextIn = intervalDays;
+      } else {
+        nextIn = intervalDays - (daysSincePlanted % intervalDays);
+      }
 
       reminders.push({
         type: 'fertilize',
@@ -86,8 +100,8 @@ function generateCareReminders(precipAnalysis) {
         interval: plant.fertilizeWeeks,
         intervalUnit: 'Wochen',
         isToday: isFertilizeDay,
-        nextIn: nextFertilizeIn === intervalDays ? 0 : nextFertilizeIn,
-        priority: isFertilizeDay ? 0 : nextFertilizeIn,
+        nextIn,
+        priority: isFertilizeDay ? 0 : nextIn,
         precipInfo: null,
         skippedByRain: false,
       });

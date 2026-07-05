@@ -345,9 +345,12 @@ export function showPlantingModal(bedId) {
 
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e) => {
+  // onclick-Zuweisung statt addEventListener: #modal-overlay ist ein geteiltes,
+  // nie ersetztes DOM-Element — addEventListener würde bei jedem Modal-Öffnen
+  // einen weiteren Listener akkumulieren (Memory-Leak über die Session).
+  overlay.onclick = (e) => {
     if (e.target === overlay) closeModal();
-  });
+  };
 
   // Save
   document.getElementById('modal-save-btn').addEventListener('click', () => {

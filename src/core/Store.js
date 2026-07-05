@@ -422,7 +422,10 @@ class Store {
       height:       bed.height || 150,
       color:        bed.color || '',
       rotation:     bed.rotation || 0,
-      customHeight: bed.customHeight || null,
+      // ?? statt || — sonst würde eine explizit gesetzte Aufbauhöhe von 0
+      // (z.B. bei einer flachen Bodenfläche) beim Duplizieren/Einfügen auf
+      // die Typ-Standardhöhe zurückfallen, da 0 falsy ist.
+      customHeight: bed.customHeight ?? null,
       soil:         bed.soil || 'normal',
       moisture:     bed.moisture || 'normal',
       points:       bed.points || [],

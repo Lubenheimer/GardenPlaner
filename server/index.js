@@ -6,7 +6,7 @@
  * werden auch die statischen Frontend-Dateien aus dist/ ausgeliefert.
  */
 import express from 'express';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, renameSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
@@ -40,7 +40,14 @@ function readData() {
 }
 
 function writeData(data) {
-  writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+  // Atomarer Write: erst in eine Temp-Datei schreiben, dann umbenennen.
+  // renameSync ist auf demselben Dateisystem atomar — ein Absturz/Stromausfall
+  // mitten im Schreiben hinterlässt so nie eine halb geschriebene, korrupte
+  // garden-data.json (die Temp-Datei bliebe zwar liegen, die Zieldatei aber
+  // ist entweder der alte ODER der neue vollständige Stand).
+  const tmpFile = `${DATA_FILE}.tmp`;
+  writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf8');
+  renameSync(tmpFile, DATA_FILE);
 }
 
 function timestamp() {

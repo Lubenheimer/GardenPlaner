@@ -116,13 +116,19 @@ async function handleFiles(files) {
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const dataUrl = await compressImage(e.target.result);
-      const photo = store.addPhoto({
-        dataUrl,
-        caption: file.name.replace(/\.[^.]+$/, ''),
-      });
-      // Show assign modal
-      showAssignModal(photo.id);
+      try {
+        const dataUrl = await compressImage(e.target.result);
+        const photo = store.addPhoto({
+          dataUrl,
+          caption: file.name.replace(/\.[^.]+$/, ''),
+        });
+        // Show assign modal
+        showAssignModal(photo.id);
+      } catch (err) {
+        // compressImage() lehnt jetzt ab statt für immer zu hängen, wenn die
+        // Bilddatei defekt ist — für den Nutzer sichtbar statt still zu scheitern.
+        alert(`Foto „${file.name}" konnte nicht geladen werden — die Datei scheint beschädigt zu sein.`);
+      }
     };
     reader.readAsDataURL(file);
   }
@@ -178,9 +184,12 @@ function showAssignModal(photoId) {
 
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e) => {
+  // onclick-Zuweisung statt addEventListener: #modal-overlay ist ein geteiltes,
+  // nie ersetztes DOM-Element — addEventListener würde bei jedem Modal-Öffnen
+  // einen weiteren Listener akkumulieren (Memory-Leak über die Session).
+  overlay.onclick = (e) => {
     if (e.target === overlay) closeModal();
-  });
+  };
 
   document.getElementById('modal-save-btn').addEventListener('click', () => {
     const bedId = document.getElementById('assign-bed-select').value || null;
@@ -245,9 +254,12 @@ function showPhotoDetail(photoId) {
 
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e) => {
+  // onclick-Zuweisung statt addEventListener: #modal-overlay ist ein geteiltes,
+  // nie ersetztes DOM-Element — addEventListener würde bei jedem Modal-Öffnen
+  // einen weiteren Listener akkumulieren (Memory-Leak über die Session).
+  overlay.onclick = (e) => {
     if (e.target === overlay) closeModal();
-  });
+  };
 
   document.getElementById('modal-save-btn').addEventListener('click', () => {
     store.updatePhoto(photoId, {

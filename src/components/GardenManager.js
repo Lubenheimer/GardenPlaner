@@ -4,10 +4,11 @@
 import { store } from '../core/Store.js';
 import { bus } from '../core/EventBus.js';
 
-let onSwitchCallback = null;
-
-export function showGardenManager(onSwitch) {
-  onSwitchCallback = onSwitch;
+// HINWEIS: Es gibt bewusst keinen onSwitch-Callback mehr — store.switchGarden()/
+// deleteGarden()/createGarden() emittieren bereits 'garden:switched' über den
+// Event-Bus, auf den main.js hört. Ein zusätzlicher direkter Callback-Aufruf
+// hier hätte main.js._onGardenSwitch() bei jedem Wechsel doppelt ausgeführt.
+export function showGardenManager() {
   _render();
 
   const overlay = document.getElementById('garden-manager-overlay');
@@ -84,13 +85,14 @@ function _bindEvents() {
   const overlay = document.getElementById('garden-manager-overlay');
 
   overlay.querySelector('#gm-close-btn').addEventListener('click', _close);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) _close(); });
+  // onclick-Zuweisung statt addEventListener: _bindEvents() läuft bei jedem
+  // Öffnen/Rename/Delete erneut auf demselben Overlay-Element (Issue #18-Muster).
+  overlay.onclick = (e) => { if (e.target === overlay) _close(); };
 
   // Switch garden
   overlay.querySelectorAll('.gm-switch-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      store.switchGarden(btn.dataset.id);
-      if (onSwitchCallback) onSwitchCallback();
+      store.switchGarden(btn.dataset.id); // emittiert 'garden:switched'
       _close();
     });
   });
@@ -115,8 +117,7 @@ function _bindEvents() {
       const id = btn.dataset.id;
       const g  = store.getGardens().find(g => g.id === id);
       if (!confirm(`Garten "${g?.name}" wirklich löschen? Alle Daten gehen verloren.`)) return;
-      store.deleteGarden(id);
-      if (onSwitchCallback) onSwitchCallback();
+      store.deleteGarden(id); // emittiert 'garden:switched'
       _render();
       _bindEvents();
     });
@@ -127,8 +128,7 @@ function _bindEvents() {
     const name = prompt('Name des neuen Gartens:', 'Neuer Garten');
     if (!name || !name.trim()) return;
     const g = store.createGarden(name.trim());
-    store.switchGarden(g.id);
-    if (onSwitchCallback) onSwitchCallback();
+    store.switchGarden(g.id); // emittiert 'garden:switched'
     _close();
   });
 }
