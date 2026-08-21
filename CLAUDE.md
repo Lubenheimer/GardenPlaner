@@ -41,3 +41,15 @@ Personal defaults for every Claude Code session, regardless of project (BC devel
 ## Communication
 - Direct and concise. Skip preamble and hedging.
 - German or English is fine depending on context — match whatever I'm writing in.
+
+## Project Context — GardenPlaner
+
+Non-code content (feature docs, backlog/ideas, commercialization strategy) lives in the SecondBrain vault, not in this repo — managed via Cowork, not here:
+
+`~/Documents/SecondBrain/01_Projekte/GardenPlaner/`
+- `_GardenPlaner.md` — project overview, entry point
+- `GardenPlaner-Features.md` — current feature set (replaces the old `Features.md`/`gardenplaner_analyse.md`)
+- `GardenPlaner-Feature-Ideen.md` — backlog/brainstorm, tagged by commercialization path (replaces the old `Implementation.md` backlog)
+- `GardenPlaner-Verkaufsstrategie.md` — go-to-market plan (B2C/B2B/SaaS), rollout phases, legal checklist
+
+Before starting feature or roadmap work, check these notes for current priorities and context. `Issues.md` in this repo stays here — it's code-relevant (bug tracking with file:line references), not product/business content.
