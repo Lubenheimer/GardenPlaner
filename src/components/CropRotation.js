@@ -5,6 +5,7 @@
  */
 import { store } from '../core/Store.js';
 import { plants, getPlant } from '../data/plants.js';
+import { esc } from '../utils/helpers.js';
 
 const NUTRITION_ORDER = ['stark', 'mittel', 'schwach', 'gruen'];
 
@@ -147,7 +148,7 @@ export function renderCropRotationWidget() {
           return `
             <div class="crop-rotation-card">
               <div class="crop-rotation-card-header">
-                <div class="crop-rotation-bed-name">${r.bed.name}</div>
+                <div class="crop-rotation-bed-name">${esc(r.bed.name)}</div>
                 <div class="crop-rotation-flow">
                   <span class="crop-rotation-badge" style="background: ${current.color}; color: ${current.textColor};">
                     ${current.emoji} ${current.label}
@@ -160,7 +161,7 @@ export function renderCropRotationWidget() {
               </div>
               <div class="crop-rotation-current">
                 <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Aktuell:</span>
-                ${r.plantings.slice(0, 4).map(p => `<span class="crop-rotation-plant">${p.emoji} ${p.name}</span>`).join('')}
+                ${r.plantings.slice(0, 4).map(p => `<span class="crop-rotation-plant">${esc(p.emoji)} ${esc(p.name)}</span>`).join('')}
                 ${r.plantings.length > 4 ? `<span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">+${r.plantings.length - 4}</span>` : ''}
               </div>
               ${r.suggestions.length > 0 ? `
@@ -168,8 +169,8 @@ export function renderCropRotationWidget() {
                   <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Empfehlung nächste Saison:</span>
                   <div class="crop-rotation-suggestion-list">
                     ${r.suggestions.map(s => `
-                      <span class="crop-rotation-suggestion" title="${s.note || ''}">
-                        ${s.emoji} ${s.name}
+                      <span class="crop-rotation-suggestion" title="${esc(s.note || '')}">
+                        ${esc(s.emoji)} ${esc(s.name)}
                       </span>
                     `).join('')}
                   </div>

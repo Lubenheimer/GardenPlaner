@@ -1,5 +1,6 @@
 import { store } from '../core/Store.js';
 import { getAllPlants, plants as systemPlants, monthNames } from '../data/plants.js';
+import { esc } from '../utils/helpers.js';
 
 export function renderCatalog() {
   const container = document.getElementById('catalog-content');
@@ -21,11 +22,11 @@ export function renderCatalog() {
       
       <div class="catalog-grid">
         ${allPlants.map(p => `
-          <div class="catalog-card" data-name="${p.name}">
+          <div class="catalog-card" data-name="${esc(p.name)}">
             <div class="catalog-card-header">
-              <span class="catalog-emoji">${p.emoji}</span>
+              <span class="catalog-emoji">${esc(p.emoji)}</span>
               <div class="catalog-title">
-                <h3>${p.name}</h3>
+                <h3>${esc(p.name)}</h3>
                 <span class="catalog-category ${p.category.toLowerCase()}">${p.category}</span>
                 ${p.isCustom ? `<span class="catalog-badge-custom">Eigene</span>` : ''}
               </div>
@@ -47,9 +48,9 @@ export function renderCatalog() {
             </div>
             
             <div class="catalog-actions">
-              <button class="icon-btn small edit-plant-btn" data-name="${p.name}" title="Bearbeiten">✏️</button>
+              <button class="icon-btn small edit-plant-btn" data-name="${esc(p.name)}" title="Bearbeiten">✏️</button>
               ${p.isCustom ? `
-                <button class="icon-btn small delete-plant-btn" data-name="${p.name}" title="Löschen" style="color: var(--color-danger)">🗑️</button>
+                <button class="icon-btn small delete-plant-btn" data-name="${esc(p.name)}" title="Löschen" style="color: var(--color-danger)">🗑️</button>
               ` : `
                 <span style="font-size: 11px; color: var(--color-text-muted); padding: 4px;">System</span>
               `}
@@ -115,7 +116,7 @@ function openPlantEditor(existingPlant = null) {
       
       <div class="form-group">
         <label>Name</label>
-        <input type="text" id="cp-name" value="${p.name}" class="form-control" placeholder="z.B. Tomate (Ochsenherz)">
+        <input type="text" id="cp-name" value="${esc(p.name)}" class="form-control" placeholder="z.B. Tomate (Ochsenherz)">
       </div>
       
       <div style="display:flex; gap:10px;">
@@ -131,7 +132,7 @@ function openPlantEditor(existingPlant = null) {
         </div>
         <div class="form-group" style="width: 80px;">
           <label>Emoji</label>
-          <input type="text" id="cp-emoji" value="${p.emoji}" class="form-control" style="text-align: center;">
+          <input type="text" id="cp-emoji" value="${esc(p.emoji)}" class="form-control" style="text-align: center;">
         </div>
       </div>
 
@@ -205,9 +206,19 @@ function openPlantEditor(existingPlant = null) {
   `;
 
   overlay.classList.remove('hidden');
+  setTimeout(() => overlay.classList.add('visible'), 10);
 
-  document.getElementById('close-modal').onclick = () => overlay.classList.add('hidden');
-  
+  // Fehlte bisher: overlay wurde nie mit der 'visible'-Klasse eingeblendet
+  // (CSS blendet den Modal-Hintergrund nur bei .visible auf opacity:1),
+  // dadurch blieb dieses Modal — anders als alle anderen im Code — bei
+  // opacity:0 hängen und war nur unsichtbar interagierbar.
+  const closeModal = () => {
+    overlay.classList.remove('visible');
+    setTimeout(() => overlay.classList.add('hidden'), 250);
+  };
+
+  document.getElementById('close-modal').onclick = closeModal;
+
   document.getElementById('save-custom-plant').onclick = () => {
     const name = document.getElementById('cp-name').value.trim();
     if (!name) return alert('Name fehlt!');
@@ -243,7 +254,7 @@ function openPlantEditor(existingPlant = null) {
       store.addCustomPlant(newPlant);
     }
 
-    overlay.classList.add('hidden');
+    closeModal();
     renderCatalog();
   };
 }

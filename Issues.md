@@ -231,8 +231,8 @@ Bei Pflanzung im Oktober und erwarteter Ernte im März (`startM=10`, `endM=3`) l
 ---
 
 ### #16 — localStorage-Quota: Fotos als Base64 im State → stilles Speicherversagen
-**Status:** 🔧 Teilweise behoben (12.06.2026)
-**Dateien:** `src/core/Store.js:196-202`, `src/components/Photos.js`, `src/utils/helpers.js:92`
+**Status:** ✅ Behoben (20.08.2026)
+**Dateien:** `src/core/Store.js`, `src/utils/photoBlobStore.js` (neu), `src/main.js`
 
 Fotos werden komprimiert (~100–200 KB Base64) direkt im State gespeichert. Bei ~5 MB localStorage-Quota schlägt ab ca. 30–40 Fotos **jede** lokale Speicherung fehl — nur mit `console.warn`, ohne UI-Hinweis. Der grüne Server-Status-Dot suggeriert weiterhin Sicherheit; im Offline-Modus (localStorage-only) ist es realer Datenverlust beim nächsten Reload.
 
@@ -240,7 +240,7 @@ Fotos werden komprimiert (~100–200 KB Base64) direkt im State gespeichert. Bei
 
 > **Umsetzung (Teil 1 von 2):** Quota-Fehler ist jetzt sichtbar statt still — `_writeLocalStorage()` emittiert bei Fehlschlag `storage:quota-exceeded`; main.js zeigt einen persistenten roten Banner mit „💾 Notfall-Backup exportieren"-Button, der direkt aus dem In-Memory-`store.state` exportiert (nicht aus dem — dann veralteten — localStorage). Banner verschwindet automatisch, sobald ein Write wieder gelingt (`storage:quota-ok`, z.B. nach Foto-Löschung). Verifiziert: simulierter `QuotaExceededError` → Banner erscheint; simulierte Recovery → Banner verschwindet; Export-Button wirft keinen Fehler.
 >
-> **Noch offen (Teil 2):** Die eigentliche Architektur-Änderung — Fotos getrennt vom Kern-State speichern (IndexedDB oder nur serverseitig) — ist NICHT umgesetzt. Das verhindert den Quota-Fehler nicht, macht ihn nur sichtbar und gibt dem Nutzer eine Notfall-Exit-Option. Größerer Umbau, empfohlen für eine eigene Welle.
+> **Umsetzung (Teil 2 von 2):** Neue `src/utils/photoBlobStore.js` kapselt IndexedDB als lokale Blob-Ablage für `photo.dataUrl` (kein 5MB-Limit wie localStorage). `Store._stripPhotoBlobs()` entfernt `dataUrl` aus jeder Kopie, die nach `localStorage` geschrieben wird (`_writeLocalStorage()` und der Cache-Write in `initFromServer()`) — `this.state` selbst behält `dataUrl` immer vollständig, sodass Rendering/Export unverändert bleiben. `addPhoto()`/`deletePhoto()`/`deleteGarden()` halten IndexedDB synchron; `initFromServer()` spiegelt vom Server gelieferte Fotos zusätzlich in IndexedDB. Neue `Store.hydratePhotosFromIndexedDB()` füllt fehlende `dataUrl` nach, falls der State nur aus `localStorage`-Metadaten geladen wurde (Server beim Start nicht erreichbar) — wird in `main.js` beim Start aufgerufen, Re-Render über `photos:hydrated`-Event. Der lokale Express-Server bleibt unverändert die volle, unlimitierte Foto-Ablage. Verifiziert: `localStorage`-Payload enthält nach Foto-Upload keine `dataUrl`-Felder mehr; Fotos bleiben nach Reload ohne laufenden Server sichtbar (IndexedDB-Hydration); Löschen entfernt den Blob aus IndexedDB.
 
 ---
 
@@ -267,11 +267,11 @@ Fotos werden komprimiert (~100–200 KB Base64) direkt im State gespeichert. Bei
 > **Umsetzung:** (a) `CanvasRenderer.fitAll()` emittiert jetzt selbst `zoom:changed` (in beiden Branches — mit und ohne Beete); redundanter Emit im Toolbar-Fit-Button in main.js entfernt. (b) Mausrad-Zoom-Obergrenze ist jetzt `Math.max(3, this.renderer.zoom)` statt hartcodiert `3` — ein bereits höherer Zoom (z.B. 6× aus dem Fokus-Modus) wird beim Rausscrollen sanft reduziert statt abrupt gekappt. Verifiziert: `fitAll()` emittiert genau 1 `zoom:changed`-Event; simulierter Wheel-Schritt von 6× → 5,4× (sanft) statt hartem Sprung auf 3×.
 
 ### #21 — User-Eingaben unescaped in HTML-Templates
-**Status:** 🔧 Teilweise behoben (13.06.2026) — Beet-Namen, Notizen, Sorten, Pflanzennamen werden in fast allen Komponenten unescaped in Template-Literals interpoliert (z. B. BedEditor.js:28 `value="${bed.name}"`). Ein `"` im Beetnamen zerbricht das Attribut, `<` bricht Layout; lokales XSS-Risiko gering, aber UI-Korruption real. Einzig GardenManager.js hat `_escapeHtml`. **Fix-Idee:** zentrale `esc()`-Helper-Funktion und konsequent nutzen.
+**Status:** ✅ Behoben (20.08.2026) — Beet-Namen, Notizen, Sorten, Pflanzennamen werden in fast allen Komponenten unescaped in Template-Literals interpoliert (z. B. BedEditor.js:28 `value="${bed.name}"`). Ein `"` im Beetnamen zerbricht das Attribut, `<` bricht Layout; lokales XSS-Risiko gering, aber UI-Korruption real. Einzig GardenManager.js hat `_escapeHtml`. **Fix-Idee:** zentrale `esc()`-Helper-Funktion und konsequent nutzen.
 
-> **Umsetzung:** Zentraler `esc()`-Helper in `utils/helpers.js` ergänzt (escaped `&<>"'`). Angewendet auf die im Issue explizit genannte Datei `BedEditor.js` — Beet-Name (Input-Value), Notizen (Textarea-Inhalt), Pflanzungsname und -sorte in der Pflanzungsliste. Verifiziert: Beetname `Beet "Süd" <test>` wird korrekt zu `Beet &quot;Süd&quot; &lt;test&gt;` im gerenderten HTML.
+> **Umsetzung (Teil 1):** Zentraler `esc()`-Helper in `utils/helpers.js` ergänzt (escaped `&<>"'`). Angewendet auf die im Issue explizit genannte Datei `BedEditor.js` — Beet-Name (Input-Value), Notizen (Textarea-Inhalt), Pflanzungsname und -sorte in der Pflanzungsliste. Verifiziert: Beetname `Beet "Süd" <test>` wird korrekt zu `Beet &quot;Süd&quot; &lt;test&gt;` im gerenderten HTML.
 >
-> **Noch offen:** Die übrigen ~8 Komponenten (PlantingModal, ShoppingList, Photos, Statistics-Druck, …) sind nicht durchgängig auf `esc()` umgestellt — der Helper ist einsatzbereit, die flächendeckende Anwendung bleibt als Folgearbeit.
+> **Umsetzung (Teil 2):** `esc()` flächendeckend auf alle verbleibenden Freitextfelder in `Catalog.js`, `PlantingModal.js`, `ShoppingList.js`, `HarvestModal.js`, `Photos.js`, `Tasks.js`, `Dashboard.js`, `CropRotation.js`, `SettingsManager.js`, `Statistics.js` (inkl. Druckansicht) und `Calendar.js` angewendet — Pflanzen-/Beet-/Ebenen-/Typ-/Gartennamen, Fotobeschreibungen, Aufgabentitel, Ausgabenbezeichnungen, Sorten und Notizen. Zwei zuvor unescapte Dropdown-Optionen in `BedEditor.js` (Ebenen-/Typ-Auswahl) ebenfalls nachgezogen. `GardenManager.js` unverändert (hat bereits eigenes `_escapeHtml`). Bewusst nicht escaped: interne, nicht nutzergesteuerte Konstanten (Theme-Labels, Nährstoff-Kategorien, Statuslabels). Verifiziert: Name mit `"` und `<b>test</b>` wird in allen genannten Views literal angezeigt statt Attribute/Layout zu brechen.
 
 ### #22 — Server: JSON-Write nicht atomar
 **Status:** ✅ Behoben (13.06.2026) — `server/index.js:43`: `writeFileSync` direkt auf die Zieldatei. Absturz/Stromausfall mitten im Write hinterlässt eine korrupte `garden-data.json` → beim nächsten Start liefert `readData()` `null` und der Client lädt/überschreibt mit leerem Stand. **Fix-Idee:** in Temp-Datei schreiben + `renameSync`; optional Backup-Rotation.

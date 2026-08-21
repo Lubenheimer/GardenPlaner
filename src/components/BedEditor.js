@@ -42,14 +42,14 @@ export function renderBedEditor(bed) {
             </div>
           </div>
           <select class="form-input" id="bed-kind-select">
-            ${types.map(t => `<option value="${t.id}" ${t.id === bed.kind ? 'selected' : ''}>${t.name} (${t.category === 'object' ? 'Objekt' : t.category === 'line' ? 'Linie' : 'Fläche'})</option>`).join('')}
+            ${types.map(t => `<option value="${t.id}" ${t.id === bed.kind ? 'selected' : ''}>${esc(t.name)} (${t.category === 'object' ? 'Objekt' : t.category === 'line' ? 'Linie' : 'Fläche'})</option>`).join('')}
           </select>
         </div>
         <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
           <div class="form-group" style="margin: 0; flex: 1; min-width: 90px;">
             <label class="form-label" style="font-size: 11px">Höhen-Ebene</label>
             <select class="form-input" id="bed-level-select">
-              ${levels.map(l => `<option value="${l.id}" ${l.id === bed.levelId ? 'selected' : ''}>${l.name}</option>`).join('')}
+              ${levels.map(l => `<option value="${l.id}" ${l.id === bed.levelId ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
             </select>
           </div>
           <div class="form-group" style="margin: 0; flex: 1;">

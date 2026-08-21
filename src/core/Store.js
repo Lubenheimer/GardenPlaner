@@ -3,6 +3,7 @@
  * Supports multiple garden projects (multi-garden).
  */
 import { bus } from './EventBus.js';
+import { putPhotoBlob, deletePhotoBlob, getAllPhotoBlobs } from '../utils/photoBlobStore.js';
 
 const STORAGE_KEY = 'gartenplaner_data';
 
@@ -251,9 +252,25 @@ class Store {
     this._scheduleSave();
   }
 
+  /**
+   * Fotos gehören per addPhoto()/initFromServer() bereits in IndexedDB —
+   * localStorage bekommt nur die Metadaten, sonst sprengen ~30-40 Base64-
+   * Fotos die 5MB-Quota (Issue #16). dataUrl bleibt in this.state selbst
+   * immer vollständig erhalten, nur die serialisierte Kopie wird gekürzt.
+   */
+  _stripPhotoBlobs(state) {
+    return {
+      ...state,
+      gardens: state.gardens.map(g => ({
+        ...g,
+        photos: g.photos.map(({ dataUrl, ...rest }) => rest),
+      })),
+    };
+  }
+
   _writeLocalStorage() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this._stripPhotoBlobs(this.state)));
       // Quota-Fehler behoben (z.B. nach Foto-Löschung) → Warnbanner ausblenden
       if (this._quotaExceeded) {
         this._quotaExceeded = false;
@@ -324,8 +341,13 @@ class Store {
         this.state  = merged;
         this.nextId = this._calculateNextId();
         this._clearHistory();
-        // Lokalen Cache aktualisieren
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); } catch {}
+        // Lokalen Cache aktualisieren (ohne Fotos, siehe _stripPhotoBlobs)
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this._stripPhotoBlobs(this.state))); } catch {}
+        // Vom Server gelieferte Fotos in IndexedDB spiegeln, damit der
+        // Offline-Fallback (Server nicht erreichbar) aktuell bleibt.
+        this.state.gardens.forEach(g => {
+          g.photos.forEach(p => { putPhotoBlob(p.id, p.dataUrl).catch(() => {}); });
+        });
         bus.emit('store:reloaded');
       }
     } catch {
@@ -333,6 +355,30 @@ class Store {
       bus.emit('server:status', false);
       console.info('[Store] Server nicht erreichbar – lokaler Modus aktiv (localStorage).');
     }
+  }
+
+  /**
+   * Füllt fehlende photo.dataUrl aus IndexedDB nach — nötig wenn der State
+   * initial nur aus localStorage geladen wurde (Metadaten ohne Bilddaten,
+   * z.B. weil der lokale Server beim Start nicht erreichbar war).
+   */
+  async hydratePhotosFromIndexedDB() {
+    let hydratedAny = false;
+    try {
+      const blobs = await getAllPhotoBlobs();
+      if (blobs.size === 0) return;
+      this.state.gardens.forEach(g => {
+        g.photos.forEach(p => {
+          if (!p.dataUrl && blobs.has(p.id)) {
+            p.dataUrl = blobs.get(p.id);
+            hydratedAny = true;
+          }
+        });
+      });
+    } catch (e) {
+      console.warn('[Store] Foto-Hydration aus IndexedDB fehlgeschlagen:', e);
+    }
+    if (hydratedAny) bus.emit('photos:hydrated');
   }
 
   // ── Multi-Garden API ───────────────────────────────────────────────
@@ -365,6 +411,10 @@ class Store {
 
   deleteGarden(id) {
     if (this.state.gardens.length <= 1) return; // always keep at least one
+    // Foto-Blobs des gelöschten Gartens aus IndexedDB entfernen, sonst
+    // bleiben sie dort für immer verwaist liegen.
+    const doomed = this.state.gardens.find(g => g.id === id);
+    doomed?.photos.forEach(p => { deletePhotoBlob(p.id).catch(() => {}); });
     this.state.gardens = this.state.gardens.filter(g => g.id !== id);
     if (this.state.activeGardenId === id) {
       this.state.activeGardenId = this.state.gardens[0].id;
@@ -632,6 +682,8 @@ class Store {
     };
     this._active().photos.push(newPhoto);
     this.save();
+    // Lokal sofort durabel machen, nicht erst mit dem nächsten Server-Push.
+    putPhotoBlob(newPhoto.id, newPhoto.dataUrl).catch(() => {});
     bus.emit('photos:changed', this._active().photos);
     return newPhoto;
   }
@@ -649,6 +701,7 @@ class Store {
     const active = this._active();
     active.photos = active.photos.filter(p => p.id !== id);
     this.save();
+    deletePhotoBlob(id).catch(() => {});
     bus.emit('photos:changed', active.photos);
   }
 

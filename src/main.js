@@ -432,6 +432,10 @@ function initEvents() {
 
   // localStorage-Quota überschritten (z.B. zu viele Foto-Uploads) — bisher
   // scheiterte das Speichern still im Hintergrund (nur console.warn).
+  bus.on('photos:hydrated', () => {
+    renderCurrentView();
+  });
+
   bus.on('storage:quota-exceeded', () => {
     _showQuotaWarningBanner();
   });
@@ -700,4 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Nach dem Start asynchron Server-Daten laden
   store.initFromServer();
+  // Fotos, die nur als Metadaten aus localStorage geladen wurden (Server
+  // beim Start nicht erreichbar), aus IndexedDB nachladen.
+  store.hydratePhotosFromIndexedDB();
 });

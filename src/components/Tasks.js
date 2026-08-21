@@ -1,5 +1,5 @@
 import { store } from '../core/Store.js';
-import { formatDate } from '../utils/helpers.js';
+import { formatDate, esc } from '../utils/helpers.js';
 import { getPlant } from '../data/plants.js';
 import {
   getCachedPrecipAnalysis,
@@ -141,13 +141,13 @@ function renderReminderCard(r, isToday) {
 
   return `
     <div class="${cardClass}">
-      <span class="care-reminder-emoji">${r.emoji}</span>
+      <span class="care-reminder-emoji">${esc(r.emoji)}</span>
       <div class="care-reminder-info">
         <div class="care-reminder-title ${skippedByRain ? 'care-skipped' : ''}">
-          ${r.type === 'water' ? 'Gießen' : 'Düngen'}: ${r.plant.emoji} ${r.plant.name}
+          ${r.type === 'water' ? 'Gießen' : 'Düngen'}: ${esc(r.plant.emoji)} ${esc(r.plant.name)}
         </div>
         <div class="care-reminder-meta">
-          ${r.bedName} · alle ${r.type === 'water' ? `${r.interval} Tage` : `${r.interval} Wochen`}
+          ${esc(r.bedName)} · alle ${r.type === 'water' ? `${r.interval} Tage` : `${r.interval} Wochen`}
         </div>
         ${rainNote}
       </div>
@@ -249,14 +249,14 @@ function renderSowingCard(r) {
 
   return `
     <div class="${cardClass}" style="${r.hasFrostWarning ? 'border-color:var(--color-danger); background:rgba(239,68,68,0.05);' : ''}">
-      <span class="care-reminder-emoji">${r.plantData.emoji}</span>
+      <span class="care-reminder-emoji">${esc(r.plantData.emoji)}</span>
       <div class="care-reminder-info">
         <div class="care-reminder-title" style="margin-bottom: 2px;">
-          ${r.plantData.name} ${r.plant.variety ? `<span style="font-weight:400; font-size:11px;">(${r.plant.variety})</span>` : ''} 
+          ${esc(r.plantData.name)} ${r.plant.variety ? `<span style="font-weight:400; font-size:11px;">(${esc(r.plant.variety)})</span>` : ''}
           ${r.plant.quantity ? `<span style="color:var(--color-primary); font-size:11px;">· ${r.plant.quantity} Stk</span>` : ''}
         </div>
         <div class="care-reminder-meta">
-          📍 ${r.bedName}
+          📍 ${esc(r.bedName)}
         </div>
         ${frostNote}
       </div>
@@ -402,7 +402,7 @@ export function renderTasks() {
               <div style="display: flex; gap: 16px; align-items: center;">
                 <input type="checkbox" class="task-checkbox" data-id="${t.id}" ${t.completed ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;">
                 <div>
-                  <div style="font-weight: 600; font-size: 16px; text-decoration: ${t.completed ? 'line-through' : 'none'};">${t.title}</div>
+                  <div style="font-weight: 600; font-size: 16px; text-decoration: ${t.completed ? 'line-through' : 'none'};">${esc(t.title)}</div>
                   ${t.dueDate ? `<div style="font-size: 12px; color: var(--color-danger); margin-top: 4px;">📅 Bis: ${formatDate(t.dueDate)}</div>` : ''}
                 </div>
               </div>
@@ -434,14 +434,14 @@ export function renderTasks() {
               if (!bed) return '';
               return `
                 <div class="care-schedule-card">
-                  <div class="care-schedule-bed-name">${bed.name}</div>
+                  <div class="care-schedule-bed-name">${esc(bed.name)}</div>
                   <div class="care-schedule-plants">
                     ${plantings.map(p => {
                       const plant = getPlant(p.name);
                       if (!plant) return '';
                       return `
                         <div class="care-schedule-plant">
-                          <span>${p.emoji} ${p.name}</span>
+                          <span>${esc(p.emoji)} ${esc(p.name)}</span>
                           <div class="care-schedule-badges">
                             ${plant.waterDays ? `<span class="care-badge care-badge-water">💧 ${plant.waterDays}d</span>` : ''}
                             ${plant.fertilizeWeeks ? `<span class="care-badge care-badge-fertilize">🧪 ${plant.fertilizeWeeks}w</span>` : ''}

@@ -1,6 +1,6 @@
 import { store } from '../core/Store.js';
 import { monthNames } from '../data/plants.js';
-import { bedAreaM2 } from '../utils/helpers.js';
+import { bedAreaM2, esc } from '../utils/helpers.js';
 
 export function renderStatistics() {
   const container = document.getElementById('statistics-content');
@@ -128,7 +128,7 @@ function _renderStatisticsForYear(container, selectedYear, availableSeasons, cur
                   const pct = Math.round((d.total / max) * 100);
                   return `
                     <div class="stats-bar-row">
-                      <span class="stats-bar-label">${d.emoji} ${name}</span>
+                      <span class="stats-bar-label">${esc(d.emoji)} ${esc(name)}</span>
                       <div class="stats-bar-track">
                         <div class="stats-bar-fill" style="width:${pct}%"></div>
                       </div>
@@ -300,7 +300,7 @@ function printGardenPlan() {
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Gartenplan – ${garden.name}</title>
+  <title>Gartenplan – ${esc(garden.name)}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -338,7 +338,7 @@ function printGardenPlan() {
 </head>
 <body>
 
-  <h1>🌱 ${garden.name}</h1>
+  <h1>🌱 ${esc(garden.name)}</h1>
   <p class="meta">Erstellt: ${new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'long', year:'numeric' })} · GartenPlaner V2</p>
 
   <!-- Gartenplan Canvas -->
@@ -365,14 +365,14 @@ function printGardenPlan() {
         ? `${(bed.width/100).toFixed(1)} m × ${(bed.height/100).toFixed(1)} m (${bedAreaM2(bed).toFixed(1)} m² L-Form)`
         : `${(bed.width/100).toFixed(1)} m × ${(bed.height/100).toFixed(1)} m`;
     return `
-      <h3>📦 ${bed.name} <small style="font-weight:400;color:#888">(${area})</small></h3>
+      <h3>📦 ${esc(bed.name)} <small style="font-weight:400;color:#888">(${area})</small></h3>
       <table>
         <thead><tr><th>Pflanze</th><th>Sorte</th><th>Anzahl</th><th>Gepflanzt</th><th>Ernte erwartet</th><th>Status</th></tr></thead>
         <tbody>
           ${bPlantings.map(p => `
             <tr>
-              <td>${p.emoji} ${p.name}</td>
-              <td>${p.variety || '—'}</td>
+              <td>${esc(p.emoji)} ${esc(p.name)}</td>
+              <td>${esc(p.variety || '—')}</td>
               <td class="num">${p.quantity || '—'}</td>
               <td>${p.datePlanted ? new Date(p.datePlanted).toLocaleDateString('de-DE') : '—'}</td>
               <td>${p.dateHarvestExpected ? new Date(p.dateHarvestExpected).toLocaleDateString('de-DE') : '—'}</td>
@@ -390,10 +390,10 @@ function printGardenPlan() {
     <tbody>
       ${harvests.map(h => `
         <tr>
-          <td>${h.plantEmoji || '🌱'} ${h.plantName}</td>
-          <td class="num">${h.amount} ${h.unit}</td>
+          <td>${esc(h.plantEmoji || '🌱')} ${esc(h.plantName)}</td>
+          <td class="num">${h.amount} ${esc(h.unit)}</td>
           <td>${h.date ? new Date(h.date).toLocaleDateString('de-DE') : '—'}</td>
-          <td>${h.notes || '—'}</td>
+          <td>${esc(h.notes || '—')}</td>
         </tr>`).join('')}
     </tbody>
   </table>` : ''}
@@ -406,8 +406,8 @@ function printGardenPlan() {
     <tbody>
       ${expenses.map(e => `
         <tr>
-          <td>${e.name}</td>
-          <td>${e.category || '—'}</td>
+          <td>${esc(e.name)}</td>
+          <td>${esc(e.category || '—')}</td>
           <td>${e.date ? new Date(e.date).toLocaleDateString('de-DE') : '—'}</td>
           <td class="num"><strong>${parseFloat(e.amount).toFixed(2)} €</strong></td>
         </tr>`).join('')}

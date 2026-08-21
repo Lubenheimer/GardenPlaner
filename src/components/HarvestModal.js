@@ -2,7 +2,7 @@
  * HarvestModal — Modal dialog for recording a harvest from a planting
  */
 import { store } from '../core/Store.js';
-import { formatDate } from '../utils/helpers.js';
+import { formatDate, esc } from '../utils/helpers.js';
 
 export function showHarvestModal(planting, bedId) {
   const overlay = document.getElementById('modal-overlay');
@@ -13,7 +13,7 @@ export function showHarvestModal(planting, bedId) {
 
   container.innerHTML = `
     <div class="modal-header">
-      <h2>${planting.emoji} Ernte erfassen — ${planting.name}</h2>
+      <h2>${esc(planting.emoji)} Ernte erfassen — ${esc(planting.name)}</h2>
       <button class="icon-btn" id="modal-close-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -57,7 +57,7 @@ export function showHarvestModal(planting, bedId) {
                 <div class="harvest-history-info">
                   <span class="harvest-history-amount">${h.amount} ${h.unit}</span>
                   <span class="harvest-history-date">${formatDate(h.date)}</span>
-                  ${h.notes ? `<span class="harvest-history-notes">${h.notes}</span>` : ''}
+                  ${h.notes ? `<span class="harvest-history-notes">${esc(h.notes)}</span>` : ''}
                 </div>
                 <button class="icon-btn small harvest-delete-btn" data-harvest-id="${h.id}" title="Löschen">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

@@ -4,6 +4,7 @@
  */
 import { store } from '../core/Store.js';
 import { getPlant } from '../data/plants.js';
+import { esc } from '../utils/helpers.js';
 
 /**
  * Calculate total quantity and aggregate buying information for a plant group
@@ -69,7 +70,7 @@ function showEditModal(plantingId, onSave) {
       <div class="form-group">
         <label class="form-label">Pflanze</label>
         <div style="padding: 8px; background: var(--bg-surface); border-radius: 4px; border: 1px solid var(--color-border);">
-          ${planting.emoji} <strong>${planting.name}</strong> ${bed ? `— Beet: ${bed.name}` : ''}
+          ${esc(planting.emoji)} <strong>${esc(planting.name)}</strong> ${bed ? `— Beet: ${esc(bed.name)}` : ''}
         </div>
       </div>
 
@@ -80,13 +81,13 @@ function showEditModal(plantingId, onSave) {
         </div>
         <div class="form-group" style="margin: 0; flex: 2; min-width: 140px;">
           <label class="form-label">Sorte / Varietät</label>
-          <input type="text" class="form-input" id="edit-variety-input" value="${planting.variety || ''}" placeholder="z.B. San Marzano">
+          <input type="text" class="form-input" id="edit-variety-input" value="${esc(planting.variety || '')}" placeholder="z.B. San Marzano">
         </div>
       </div>
 
       <div class="form-group" style="margin-top: var(--space-sm);">
         <label class="form-label">Notizen</label>
-        <textarea class="form-input" id="edit-notes-input" placeholder="z.B. Bio-Qualität, spezial Händler…" rows="2">${planting.notes || ''}</textarea>
+        <textarea class="form-input" id="edit-notes-input" placeholder="z.B. Bio-Qualität, spezial Händler…" rows="2">${esc(planting.notes || '')}</textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -165,16 +166,16 @@ export function renderShoppingList() {
         <div class="list-group" style="display: flex; flex-direction: column; gap: 12px;">
           ${plantGroups.map((group, idx) => {
             const data = aggregateShoppingData(group);
-            const varieties = data.varieties.length > 0 ? data.varieties.join(', ') : '(Standard)';
+            const varieties = data.varieties.length > 0 ? data.varieties.map(esc).join(', ') : '(Standard)';
             return `
               <div class="shopping-item" style="padding: 16px; background: var(--bg-surface); border: var(--glass-border); border-radius: var(--radius-md); display: flex; gap: 12px; align-items: flex-start; transition: all 0.2s ease;">
-                <div style="font-size: 28px; line-height: 1;">${group.emoji}</div>
+                <div style="font-size: 28px; line-height: 1;">${esc(group.emoji)}</div>
                 <div style="flex: 1; min-width: 0;">
-                  <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${group.name}</div>
+                  <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${esc(group.name)}</div>
                   <div style="font-size: 12px; color: var(--color-text-muted); line-height: 1.4;">
-                    <div><strong>${data.totalQuantity}×</strong> ${group.category}</div>
+                    <div><strong>${data.totalQuantity}×</strong> ${esc(group.category)}</div>
                     <div>Sorten: ${varieties}</div>
-                    <div>Beete: ${data.beds.join(', ')}</div>
+                    <div>Beete: ${data.beds.map(esc).join(', ')}</div>
                   </div>
                 </div>
                 <div style="display: flex; gap: 8px;">

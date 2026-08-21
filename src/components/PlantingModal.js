@@ -4,6 +4,7 @@
  */
 import { store } from '../core/Store.js';
 import { searchPlants, getPlant } from '../data/plants.js';
+import { esc } from '../utils/helpers.js';
 
 export function showPlantingModal(bedId) {
   const overlay = document.getElementById('modal-overlay');
@@ -183,7 +184,7 @@ export function showPlantingModal(bedId) {
       const conflicts = activePlantings.filter(p => plant.badNeighbors.includes(p.name));
       if (conflicts.length > 0) {
         html += `<div style="background: rgba(239, 68, 68, 0.1); color: var(--color-danger); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
-          ⚠️ <strong>Schlechte Nachbarn:</strong> Verträgt sich nicht gut mit ${conflicts.map(c => c.name).join(', ')} im selben Beet.
+          ⚠️ <strong>Schlechte Nachbarn:</strong> Verträgt sich nicht gut mit ${conflicts.map(c => esc(c.name)).join(', ')} im selben Beet.
         </div>`;
       }
     }
@@ -193,7 +194,7 @@ export function showPlantingModal(bedId) {
       const friends = activePlantings.filter(p => plant.goodNeighbors.includes(p.name));
       if (friends.length > 0) {
         html += `<div style="background: rgba(74, 222, 128, 0.1); color: var(--color-success); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
-          💚 <strong>Gute Nachbarschaft:</strong> Verträgt sich super mit ${friends.map(f => f.name).join(', ')}.
+          💚 <strong>Gute Nachbarschaft:</strong> Verträgt sich super mit ${friends.map(f => esc(f.name)).join(', ')}.
         </div>`;
       }
     }
@@ -219,13 +220,13 @@ export function showPlantingModal(bedId) {
         }
       }
       if (nearbyBadNames.length > 0) {
-        const list = nearbyBadNames.map(n => `${n.name} (Beet „${n.bed}")`).join(', ');
+        const list = nearbyBadNames.map(n => `${esc(n.name)} (Beet „${esc(n.bed)}")`).join(', ');
         html += `<div style="background: rgba(239, 68, 68, 0.1); color: var(--color-danger); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
           ⚠️ <strong>Schlechter Nachbar (Nachbarbeet):</strong> In der Nähe wächst ${list} — schlechte Kombination!
         </div>`;
       }
       if (nearbyGoodNames.length > 0) {
-        const list = nearbyGoodNames.map(n => `${n.name} (Beet „${n.bed}")`).join(', ');
+        const list = nearbyGoodNames.map(n => `${esc(n.name)} (Beet „${esc(n.bed)}")`).join(', ');
         html += `<div style="background: rgba(74, 222, 128, 0.1); color: var(--color-success); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
           💚 <strong>Guter Nachbar (Nachbarbeet):</strong> In der Nähe wächst ${list} — profitiert voneinander!
         </div>`;
@@ -240,7 +241,7 @@ export function showPlantingModal(bedId) {
       });
       if (previousHeavyFeeders.length > 0) {
         html += `<div style="background: rgba(245, 158, 11, 0.1); color: var(--color-warning); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
-          🔄 <strong>Fruchtfolge beachten:</strong> Hier wuchsen zuvor bereits Starkzehrer (${previousHeavyFeeders.map(p => p.name).join(', ')}). Boden gut vorbereiten!
+          🔄 <strong>Fruchtfolge beachten:</strong> Hier wuchsen zuvor bereits Starkzehrer (${previousHeavyFeeders.map(p => esc(p.name)).join(', ')}). Boden gut vorbereiten!
         </div>`;
       }
     }
@@ -257,13 +258,13 @@ export function showPlantingModal(bedId) {
           ? ` Ideal: ${preferredLabels.join(' oder ')}.`
           : '';
         html += `<div style="background: rgba(245, 158, 11, 0.1); color: var(--color-warning); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
-          🪨 <strong>Bodeneignung:</strong> ${plant.name} ist weniger geeignet für ${bedSoilLabel}.${preferredText}
+          🪨 <strong>Bodeneignung:</strong> ${esc(plant.name)} ist weniger geeignet für ${bedSoilLabel}.${preferredText}
         </div>`;
       }
     }
     if (bed && bed.soil === 'sand' && plant.nutrition === 'stark') {
       html += `<div style="background: rgba(59, 130, 246, 0.1); color: var(--color-primary); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
-        ℹ️ <strong>Sandiger Boden:</strong> Starkzehrer wie ${plant.name} benötigen hier deutlich mehr Dünger und regelmäßiges Gießen.
+        ℹ️ <strong>Sandiger Boden:</strong> Starkzehrer wie ${esc(plant.name)} benötigen hier deutlich mehr Dünger und regelmäßiges Gießen.
       </div>`;
     }
     if (bed && bed.moisture === 'dry' && plant.category === 'Gemüse') {
@@ -277,11 +278,11 @@ export function showPlantingModal(bedId) {
        const sunReq = plant.sun || (plant.category === 'Gemüse' ? 'sun' : 'partial');
        if (bed.sunlight === 'shade' && sunReq === 'sun') {
           html += `<div style="background: rgba(239, 68, 68, 0.1); color: var(--color-danger); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
-            🌑 <strong>Zu schattig:</strong> ${plant.name} benötigt viel Sonne, das Beet ist jedoch als schattig konfiguriert.
+            🌑 <strong>Zu schattig:</strong> ${esc(plant.name)} benötigt viel Sonne, das Beet ist jedoch als schattig konfiguriert.
           </div>`;
        } else if (bed.sunlight === 'sun' && sunReq === 'shade') {
           html += `<div style="background: rgba(245, 158, 11, 0.1); color: var(--color-warning); padding: 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;">
-            ☀️ <strong>Vollsonne:</strong> ${plant.name} brennt in der direkten Sonne schnell aus. Halbschatten wäre besser.
+            ☀️ <strong>Vollsonne:</strong> ${esc(plant.name)} brennt in der direkten Sonne schnell aus. Halbschatten wäre besser.
           </div>`;
        }
     }
@@ -296,14 +297,14 @@ export function showPlantingModal(bedId) {
     if (matches.length > 0) {
       results.style.display = 'block';
       results.innerHTML = matches.map(p => `
-        <div class="autocomplete-item" data-name="${p.name}" data-emoji="${p.emoji}" data-category="${p.category}">
-          <span class="plant-emoji">${p.emoji}</span>
+        <div class="autocomplete-item" data-name="${esc(p.name)}" data-emoji="${esc(p.emoji)}" data-category="${esc(p.category)}">
+          <span class="plant-emoji">${esc(p.emoji)}</span>
           <div class="plant-info">
             <div class="plant-name">
-              ${p.name}
+              ${esc(p.name)}
               ${p.isCustom ? `<span style="font-size: 10px; color: var(--color-accent); font-weight: 600; margin-left: 4px;">[Eigene]</span>` : ''}
             </div>
-            <div class="plant-category">${p.category}${p.spacing ? ` · ${p.spacing} cm` : ''}${p.daysToHarvest ? ` · ${p.daysToHarvest}d` : ''}</div>
+            <div class="plant-category">${esc(p.category)}${p.spacing ? ` · ${p.spacing} cm` : ''}${p.daysToHarvest ? ` · ${p.daysToHarvest}d` : ''}</div>
           </div>
         </div>
       `).join('');

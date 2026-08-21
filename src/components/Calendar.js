@@ -6,7 +6,7 @@
  */
 import { store } from '../core/Store.js';
 import { monthNames, getPlant, getAllPlants } from '../data/plants.js';
-import { statusEmojis } from '../utils/helpers.js';
+import { statusEmojis, esc } from '../utils/helpers.js';
 
 let currentYear  = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
@@ -139,7 +139,7 @@ function renderGantt() {
 
   for (const bedName of bedNames) {
     const plantsInBed = Object.values(bedGroups[bedName]);
-    rows += `<div class="gantt-bed-header">📦 ${bedName}</div>`;
+    rows += `<div class="gantt-bed-header">📦 ${esc(bedName)}</div>`;
 
     const busyMonths = new Set(); // Für Lücken-Analyse
 
@@ -198,9 +198,9 @@ function renderGantt() {
       rows += `
         <div class="gantt-row ${hasActual ? 'has-actual' : ''}">
           <div class="gantt-plant-label">
-            <span class="plant-emoji">${plant.emoji}</span>
+            <span class="plant-emoji">${esc(plant.emoji)}</span>
             <div class="gantt-plant-info">
-              <span class="gantt-plant-name">${plant.name}</span>
+              <span class="gantt-plant-name">${esc(plant.name)}</span>
               ${dateSubline}
             </div>
           </div>
@@ -242,7 +242,7 @@ function renderGantt() {
             <span class="gantt-suggestion-label">💡 Mögliche Nachkulturen:</span>
             ${suggestions.map(p => `
               <span class="gantt-suggestion-chip" title="${p.daysToHarvest ? p.daysToHarvest + ' Tage bis Ernte' : ''}">
-                ${p.emoji} ${p.name}
+                ${esc(p.emoji)} ${esc(p.name)}
               </span>
             `).join('')}
           </div>
@@ -304,7 +304,7 @@ function renderMonthView() {
         <span class="day-number">${d}</span>
         ${events.slice(0, 3).map(p => `
           <div class="calendar-event" style="background: var(--color-primary-soft); color: var(--color-primary);">
-            ${p.emoji} ${p.name}
+            ${esc(p.emoji)} ${esc(p.name)}
           </div>
         `).join('')}
         ${events.length > 3 ? `<div style="font-size: var(--font-size-xs); color: var(--color-text-muted);">+${events.length - 3} mehr</div>` : ''}
@@ -345,10 +345,10 @@ function renderMonthView() {
             const d   = new Date(p.datePlanted);
             return `
               <div class="planting-item">
-                <span class="planting-emoji">${p.emoji}</span>
+                <span class="planting-emoji">${esc(p.emoji)}</span>
                 <div class="planting-info">
-                  <div class="planting-name">${p.name}</div>
-                  <div class="planting-date">${bed ? bed.name + ' • ' : ''}${d.toLocaleDateString('de-DE')}</div>
+                  <div class="planting-name">${esc(p.name)}</div>
+                  <div class="planting-date">${bed ? esc(bed.name) + ' • ' : ''}${d.toLocaleDateString('de-DE')}</div>
                 </div>
                 <span class="badge badge-${p.status}">${statusEmojis[p.status]}</span>
               </div>

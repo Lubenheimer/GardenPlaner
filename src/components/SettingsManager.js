@@ -1,5 +1,6 @@
 import { store } from '../core/Store.js';
 import { bus } from '../core/EventBus.js';
+import { esc } from '../utils/helpers.js';
 
 const COLOR_THEMES = [
   {
@@ -114,7 +115,7 @@ export function renderSettingsManager() {
             ${levels.sort((a,b) => a.zIndex - b.zIndex).map(l => `
               <div class="list-item" style="display:flex; justify-content:space-between; align-items:center; padding: 8px; border: var(--glass-border); margin-bottom: 8px; border-radius: 4px; background: rgba(0,0,0,0.05);">
                 <div>
-                  <strong>${l.name}</strong> <span style="font-size:10px; color:var(--color-text-muted)">(Höhe: ${l.zIndex})</span>
+                  <strong>${esc(l.name)}</strong> <span style="font-size:10px; color:var(--color-text-muted)">(Höhe: ${l.zIndex})</span>
                 </div>
                 <button class="icon-btn small delete-level-btn" data-id="${l.id}" ${levels.length <= 1 ? 'disabled style="opacity: 0.3"' : ''}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -140,7 +141,7 @@ export function renderSettingsManager() {
               <div class="list-item" style="display:flex; justify-content:space-between; align-items:center; padding: 8px; border: var(--glass-border); margin-bottom: 8px; border-radius: 4px; background: rgba(0,0,0,0.05);">
                 <div style="display:flex; align-items:center; gap: 8px;">
                   <span style="width: 16px; height: 16px; border-radius: 3px; background: ${t.color}"></span>
-                  <strong>${t.name}</strong>
+                  <strong>${esc(t.name)}</strong>
                   <span style="font-size:10px; color:var(--color-text-muted)">(${t.category || 'Fläche'}, ${((t.defaultHeight || 0) / 100).toFixed(2)}m)</span>
                   ${t.hasPlantings ? '<span title="Bepflanzbar" style="font-size: 12px;">🌱</span>' : ''}
                 </div>
@@ -183,7 +184,7 @@ export function renderSettingsManager() {
             const loc = store.getSettings().location || {};
             return loc.city ? `
               <div class="location-selected-badge">
-                📍 ${loc.city}
+                📍 ${esc(loc.city)}
                 <button id="location-clear-btn" style="background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:0 0 0 4px;font-size:12px;" title="Standort entfernen">✕</button>
               </div>
               <p style="font-size:11px; color:var(--color-text-muted); margin-top:6px;">Koordinaten: ${loc.lat?.toFixed(3)}, ${loc.lon?.toFixed(3)}</p>
@@ -247,10 +248,10 @@ export function bindSettingsEvents(containerBlock, onUpdateCallback) {
           locationResults.innerHTML = `<div class="location-result-item" style="color:var(--color-text-muted);">Keine Ergebnisse</div>`;
         } else {
           locationResults.innerHTML = results.map(r => `
-            <div class="location-result-item" data-lat="${r.latitude}" data-lon="${r.longitude}" data-city="${r.name}${r.admin1 ? ', ' + r.admin1 : ''}">
+            <div class="location-result-item" data-lat="${r.latitude}" data-lon="${r.longitude}" data-city="${esc(r.name)}${r.admin1 ? ', ' + esc(r.admin1) : ''}">
               <span>📍</span>
-              <span>${r.name}${r.admin1 ? ' <span style="color:var(--color-text-muted)">' + r.admin1 + '</span>' : ''}</span>
-              <span class="loc-country">${r.country || ''}</span>
+              <span>${esc(r.name)}${r.admin1 ? ' <span style="color:var(--color-text-muted)">' + esc(r.admin1) + '</span>' : ''}</span>
+              <span class="loc-country">${esc(r.country || '')}</span>
             </div>
           `).join('');
           locationResults.querySelectorAll('.location-result-item[data-lat]').forEach(item => {

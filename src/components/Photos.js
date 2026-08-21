@@ -3,7 +3,7 @@
  */
 import { store } from '../core/Store.js';
 import { bus } from '../core/EventBus.js';
-import { formatDate, compressImage } from '../utils/helpers.js';
+import { formatDate, compressImage, esc } from '../utils/helpers.js';
 
 export function renderPhotos() {
   const container = document.getElementById('photos-content');
@@ -26,7 +26,7 @@ export function renderPhotos() {
         <label class="form-label" style="margin: 0; white-space: nowrap;">Filtern nach Beet:</label>
         <select class="form-select" id="photo-filter-select" style="max-width: 200px;">
           <option value="">Alle Fotos</option>
-          ${beds.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+          ${beds.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('')}
         </select>
       </div>
     ` : ''}
@@ -90,9 +90,9 @@ function renderPhotoGrid(photos, beds) {
         const bed = photo.bedId ? store.getBed(photo.bedId) : null;
         return `
           <div class="photo-card" data-photo-id="${photo.id}">
-            <img src="${photo.dataUrl}" alt="${photo.caption || 'Garten-Foto'}" loading="lazy">
+            <img src="${photo.dataUrl}" alt="${esc(photo.caption || 'Garten-Foto')}" loading="lazy">
             <div class="photo-card-overlay">
-              <div class="photo-bed-name">${bed ? bed.name : 'Nicht zugeordnet'}</div>
+              <div class="photo-bed-name">${bed ? esc(bed.name) : 'Nicht zugeordnet'}</div>
               <div class="photo-date">${formatDate(photo.takenAt)}</div>
             </div>
           </div>
@@ -157,12 +157,12 @@ function showAssignModal(photoId) {
         <label class="form-label">Beet zuordnen</label>
         <select class="form-select" id="assign-bed-select">
           <option value="">— Nicht zuordnen —</option>
-          ${beds.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+          ${beds.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Beschreibung</label>
-        <input type="text" class="form-input" id="assign-caption-input" placeholder="Optionale Beschreibung..." value="${photo?.caption || ''}">
+        <input type="text" class="form-input" id="assign-caption-input" placeholder="Optionale Beschreibung..." value="${esc(photo?.caption || '')}">
       </div>
     </div>
     <div class="modal-footer">
@@ -223,12 +223,12 @@ function showPhotoDetail(photoId) {
         <label class="form-label">Beet</label>
         <select class="form-select" id="detail-bed-select">
           <option value="">— Nicht zugeordnet —</option>
-          ${beds.map(b => `<option value="${b.id}" ${b.id === photo.bedId ? 'selected' : ''}>${b.name}</option>`).join('')}
+          ${beds.map(b => `<option value="${b.id}" ${b.id === photo.bedId ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Beschreibung</label>
-        <input type="text" class="form-input" id="detail-caption-input" value="${photo.caption || ''}">
+        <input type="text" class="form-input" id="detail-caption-input" value="${esc(photo.caption || '')}">
       </div>
       <div style="font-size: var(--font-size-xs); color: var(--color-text-muted);">
         Hochgeladen: ${formatDate(photo.createdAt)}

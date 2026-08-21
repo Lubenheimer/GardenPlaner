@@ -2,7 +2,7 @@
  * Dashboard — Overview of the garden
  */
 import { store } from '../core/Store.js';
-import { statusLabels, statusEmojis, formatDate, bedAreaM2 } from '../utils/helpers.js';
+import { statusLabels, statusEmojis, formatDate, bedAreaM2, esc } from '../utils/helpers.js';
 import { getSowingPlants, getHarvestPlants, monthNames } from '../data/plants.js';
 import { renderCropRotationWidget } from './CropRotation.js';
 
@@ -210,7 +210,7 @@ export function renderDashboard() {
               ${overdue.length} überfällige Aufgabe${overdue.length > 1 ? 'n' : ''}
             </div>
             <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">
-              ${overdue.slice(0, 3).map(t => `📋 ${t.title}`).join('  ·  ')}${overdue.length > 3 ? `  · +${overdue.length - 3} weitere` : ''}
+              ${overdue.slice(0, 3).map(t => `📋 ${esc(t.title)}`).join('  ·  ')}${overdue.length > 3 ? `  · +${overdue.length - 3} weitere` : ''}
             </div>
           </div>
           <a id="go-to-tasks-alert" style="
@@ -266,7 +266,7 @@ export function renderDashboard() {
       <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
         ${sowingNow.slice(0, 12).map(p => `
           <span class="badge badge-planted" style="font-size: var(--font-size-sm); padding: 4px 12px;">
-            ${p.emoji} ${p.name}
+            ${esc(p.emoji)} ${esc(p.name)}
           </span>
         `).join('')}
       </div>
@@ -278,7 +278,7 @@ export function renderDashboard() {
       <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
         ${harvestNow.length > 0 ? harvestNow.slice(0, 12).map(p => `
           <span class="badge badge-harvest" style="font-size: var(--font-size-sm); padding: 4px 12px;">
-            ${p.emoji} ${p.name}
+            ${esc(p.emoji)} ${esc(p.name)}
           </span>
         `).join('') : '<span style="color: var(--color-text-muted); font-size: var(--font-size-sm);">Keine Erntevorschläge für diesen Monat</span>'}
       </div>
@@ -325,9 +325,9 @@ export function renderDashboard() {
               const amounts = Object.entries(p.total).map(([u, t]) => `${t % 1 === 0 ? t : t.toFixed(1)} ${u}`).join(', ');
               return `
                 <div class="harvest-dashboard-item">
-                  <span style="font-size: 20px;">${p.emoji}</span>
+                  <span style="font-size: 20px;">${esc(p.emoji)}</span>
                   <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: var(--font-size-sm);">${p.name}</div>
+                    <div style="font-weight: 600; font-size: var(--font-size-sm);">${esc(p.name)}</div>
                     <div style="font-size: var(--font-size-xs); color: var(--color-text-muted);">${amounts} · ${p.count}× geerntet</div>
                   </div>
                 </div>
@@ -350,10 +350,10 @@ export function renderDashboard() {
             const bed = store.getBed(p.bedId);
             return `
               <div class="planting-item">
-                <span class="planting-emoji">${p.emoji}</span>
+                <span class="planting-emoji">${esc(p.emoji)}</span>
                 <div class="planting-info">
-                  <div class="planting-name">${p.name}</div>
-                  <div class="planting-date">${bed ? bed.name : 'Unbekanntes Beet'} • ${formatDate(p.datePlanted)}</div>
+                  <div class="planting-name">${esc(p.name)}</div>
+                  <div class="planting-date">${bed ? esc(bed.name) : 'Unbekanntes Beet'} • ${formatDate(p.datePlanted)}</div>
                 </div>
                 <span class="badge badge-${p.status}">${statusEmojis[p.status]} ${statusLabels[p.status]}</span>
               </div>
@@ -379,8 +379,8 @@ export function renderDashboard() {
             <div class="list-item" style="display: flex; gap: 12px; align-items: center; padding: 12px; background: var(--bg-surface); border: var(--glass-border); border-radius: var(--radius-md);">
               <span style="font-size: 20px;">🛒</span>
               <div>
-                <div style="font-weight: 600;">Saatgut/Setzlinge besorgen: ${p.emoji} ${p.name}</div>
-                <div style="font-size: 12px; color: var(--color-text-muted);">Geplant für Beet: ${p.bedName}</div>
+                <div style="font-weight: 600;">Saatgut/Setzlinge besorgen: ${esc(p.emoji)} ${esc(p.name)}</div>
+                <div style="font-size: 12px; color: var(--color-text-muted);">Geplant für Beet: ${esc(p.bedName)}</div>
               </div>
             </div>
           `).join('')}
@@ -409,7 +409,7 @@ export function renderDashboard() {
             <div class="planting-item">
               <span class="planting-emoji">${e.category === 'seeds' ? '🌱' : e.category === 'soil' ? '🟤' : e.category === 'tools' ? '🛠️' : '🛒'}</span>
               <div class="planting-info">
-                <div class="planting-name">${e.name}</div>
+                <div class="planting-name">${esc(e.name)}</div>
                 <div class="planting-date">${formatDate(e.date)}</div>
               </div>
               <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">${e.amount.toFixed(2)} €</span>
