@@ -3,12 +3,19 @@
  */
 import { store } from '../core/Store.js';
 import { bus } from '../core/EventBus.js';
+import { GARDEN_TEMPLATES } from '../data/templates.js';
+import { getPlant } from '../data/plants.js';
 
 // HINWEIS: Es gibt bewusst keinen onSwitch-Callback mehr — store.switchGarden()/
 // deleteGarden()/createGarden() emittieren bereits 'garden:switched' über den
 // Event-Bus, auf den main.js hört. Ein zusätzlicher direkter Callback-Aufruf
 // hier hätte main.js._onGardenSwitch() bei jedem Wechsel doppelt ausgeführt.
+let _view = 'list'; // 'list' | 'new'
+let _pendingTemplateId = null;
+
 export function showGardenManager() {
+  _view = 'list';
+  _pendingTemplateId = null;
   _render();
 
   const overlay = document.getElementById('garden-manager-overlay');
@@ -26,10 +33,15 @@ function _close() {
 
 function _render() {
   const overlay = document.getElementById('garden-manager-overlay');
+  overlay.innerHTML = _view === 'new' ? _newGardenView() : _listView();
+  _bindEvents();
+}
+
+function _listView() {
   const gardens  = store.getGardens();
   const activeId = store.getActiveGardenId();
 
-  overlay.innerHTML = `
+  return `
     <div class="modal-container" style="max-width:520px">
       <div class="modal-header">
         <h2>🌿 Meine Gärten</h2>
@@ -48,8 +60,47 @@ function _render() {
       </div>
     </div>
   `;
+}
 
-  _bindEvents();
+function _newGardenView() {
+  const blankSelected = _pendingTemplateId === null;
+
+  return `
+    <div class="modal-container" style="max-width:640px">
+      <div class="modal-header">
+        <h2>🌱 Neuer Garten</h2>
+        <button class="icon-btn" id="gm-close-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" class="form-input" id="gm-new-name-input" value="Neuer Garten">
+        </div>
+        <label class="form-label" style="display:block;margin:var(--space-md) 0 var(--space-sm)">Vorlage</label>
+        <div class="gm-template-grid">
+          <div class="gm-template-card ${blankSelected ? 'gm-template-card--selected' : ''}" data-template-id="">
+            <div class="gm-template-emoji">✨</div>
+            <div class="gm-template-name">Leer starten</div>
+            <div class="gm-template-desc">Eigenes Layout von Grund auf.</div>
+          </div>
+          ${GARDEN_TEMPLATES.map(t => `
+            <div class="gm-template-card ${_pendingTemplateId === t.id ? 'gm-template-card--selected' : ''}" data-template-id="${t.id}">
+              <div class="gm-template-emoji">${t.emoji}</div>
+              <div class="gm-template-name">${_escapeHtml(t.name)}</div>
+              <div class="gm-template-desc">${_escapeHtml(t.description)}</div>
+              <div class="gm-template-meta">${t.beds.length} Beete · ${t.plantings.length} Pflanzungen</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="gm-back-btn">Zurück</button>
+        <button class="btn btn-primary" id="gm-create-btn">Garten erstellen</button>
+      </div>
+    </div>
+  `;
 }
 
 function _gardenCard(g, activeId) {
@@ -123,13 +174,66 @@ function _bindEvents() {
     });
   });
 
-  // New garden
-  overlay.querySelector('#gm-new-btn').addEventListener('click', () => {
-    const name = prompt('Name des neuen Gartens:', 'Neuer Garten');
-    if (!name || !name.trim()) return;
-    const g = store.createGarden(name.trim());
-    store.switchGarden(g.id); // emittiert 'garden:switched'
-    _close();
+  // New garden — öffnet die Vorlagen-Ansicht statt eines prompt()
+  overlay.querySelector('#gm-new-btn')?.addEventListener('click', () => {
+    _view = 'new';
+    _pendingTemplateId = null;
+    _render();
+  });
+
+  // Vorlagen-Ansicht: zurück zur Liste
+  overlay.querySelector('#gm-back-btn')?.addEventListener('click', () => {
+    _view = 'list';
+    _render();
+  });
+
+  // Vorlagen-Ansicht: Karte auswählen
+  overlay.querySelectorAll('.gm-template-card').forEach(card => {
+    card.addEventListener('click', () => {
+      _pendingTemplateId = card.dataset.templateId || null;
+      _render();
+    });
+  });
+
+  // Vorlagen-Ansicht: Garten erstellen
+  overlay.querySelector('#gm-create-btn')?.addEventListener('click', () => {
+    const nameInput = overlay.querySelector('#gm-new-name-input');
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    _createGarden(name, _pendingTemplateId);
+  });
+}
+
+function _createGarden(name, templateId) {
+  const g = store.createGarden(name);
+  store.switchGarden(g.id); // emittiert 'garden:switched'
+
+  const template = GARDEN_TEMPLATES.find(t => t.id === templateId);
+  if (template) _applyTemplate(template);
+
+  _view = 'list';
+  _pendingTemplateId = null;
+  _close();
+}
+
+/** Legt die Beete und Pflanzungen einer Vorlage im aktiven (neuen) Garten an. */
+function _applyTemplate(template) {
+  const createdBeds = template.beds.map(bedDef => store.addBed(bedDef));
+
+  template.plantings.forEach(p => {
+    const bed = createdBeds[p.bedIndex];
+    if (!bed) return;
+    const plant = getPlant(p.name) || { name: p.name, emoji: '🌱', category: '' };
+    store.addPlanting({
+      bedId: bed.id,
+      name: plant.name,
+      emoji: plant.emoji,
+      category: plant.category,
+      isPerennial: plant.isPerennial || false,
+      spacing: plant.spacing || null,
+      quantity: p.quantity || null,
+      status: 'planned',
+    });
   });
 }
 
@@ -168,5 +272,29 @@ style.textContent = `
   .gm-delete-btn { color: var(--color-danger) !important; }
   .gm-delete-btn:hover { background: var(--color-danger-soft) !important; }
   .gm-delete-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .gm-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-sm);
+  }
+  .gm-template-card {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: var(--glass-border);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .gm-template-card:hover { border-color: var(--color-border-strong); box-shadow: 0 4px 12px var(--color-shadow); }
+  .gm-template-card--selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    box-shadow: 0 0 0 2px var(--color-primary-soft);
+  }
+  .gm-template-emoji { font-size: 26px; margin-bottom: var(--space-xs); }
+  .gm-template-name { font-weight: 600; font-size: var(--font-size-sm); margin-bottom: 2px; }
+  .gm-template-desc { font-size: var(--font-size-xs); color: var(--color-text-muted); line-height: 1.4; }
+  .gm-template-meta { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs); opacity: 0.8; }
 `;
 document.head.appendChild(style);
